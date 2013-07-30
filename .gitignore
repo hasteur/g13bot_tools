@@ -1,4 +1,8 @@
+#These should NEVER EVER BE uploaded
 g13.db
+login-data
+user-config.py
+
 *.py[cod]
 
 # C extensions
