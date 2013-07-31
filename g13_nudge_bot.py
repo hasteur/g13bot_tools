@@ -173,8 +173,12 @@ class CategoryListifyRobot:
           datetime.datetime.now() - datetime.timedelta(days=(180)) \
         ).timetuple()
         conn = sqlite3.connect('g13.db')
+        limit = 5
         for article in listOfArticles:
+            if limit <= 0:
+              break
             if None != page_match.match(article.title()):
+              pywikibot.output(article.title())
               edit_time = time.strptime( \
                 article.getLatestEditors()[0]['timestamp'],
                 "%Y-%m-%dT%H:%M:%SZ"
@@ -235,6 +239,7 @@ class CategoryListifyRobot:
                   "VALUES (?, ?)" , (article.title(),creator))
                 conn.commit()
                 cur = None
+                limit = limit - 1
         conn.close()
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
              regexSkipUrl=None, always=False, up=False, putText=True,
