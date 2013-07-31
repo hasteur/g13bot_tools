@@ -205,6 +205,7 @@ class CategoryListifyRobot:
                 up = False \
               )
               break
+            #Need to remove record if the page no longer exists or has been converted to a Redirect
             article = pywikibot.Page(
               self.site,
               article_item[0]
