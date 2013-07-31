@@ -213,7 +213,7 @@ class CategoryListifyRobot:
                   "that [[%s]]," %(article.title()) +\
                   " a page you created has not been edited in at least 180" + \
                   " days.  The Articles for Creation space is not an" + \
-                  "indefinite storage location for content that is not " + \
+                  " indefinite storage location for content that is not " + \
                   "appropriate for articlespace.\n" + \
                   "If your submission is not edited soon, it could be " + \
                   "nominated for deletion.  If you would like to attempt " + \
