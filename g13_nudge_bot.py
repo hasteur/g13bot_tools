@@ -192,7 +192,15 @@ class CategoryListifyRobot:
                   #We already have notified this user
                   pywikibot.output(u"Already notifified (%s,%s)" %(creator, article.title()))
                   continue
-
+                #Perform a null edit to get the creative Category juices flowing
+                add_text( \
+                  page = article, \
+                  addText = '', \
+                  always = True, \
+                  summary = 'Null Edit', \
+                  up = False, \
+                  create = False \
+                )
                 user_talk_page = pywikibot.Page(
                   self.site,
                   'User talk:%s' % creator
