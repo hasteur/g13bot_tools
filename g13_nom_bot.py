@@ -21,7 +21,7 @@ __version__ = '$Id$'
 # Distributed under the terms of the MIT license.
 #
 
-import os, re, pickle, bz2, time, datetime
+import os, re, pickle, bz2, time, datetime, sqlite3
 import wikipedia as pywikibot
 import catlib, config, pagegenerators
 from pywikibot import i18n
@@ -163,25 +163,32 @@ class CategoryListifyRobot:
         self.recurse = recurse
 
     def run(self):
-        listOfArticles = self.cat.articlesList(recurse = self.recurse)
-        if self.subCats:
-            listOfArticles += self.cat.subcategoriesList()
-        listString = ""
-        page_match = re.compile('Wikipedia talk:Articles for creation/')
-        six_months_ago = ( \
-          datetime.datetime.now() - datetime.timedelta(days=(180+30)) \
-        ).timetuple()
         change_counter = 0
         csd_cat = catlib.Category(self.site, \
           'Category:Candidates for speedy deletion as abandoned AfC submissions' \
         )
         csd_cat_size = len(csd_cat.articlesList())
         max_noms_csd_cat = 50 - csd_cat_size
-        for article in listOfArticles:
+        thirty_days_ago = ( datetime.datetime.now() - \
+          datetime.timedelta(days=30)
+        )
+        notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:S')
+        conn = sqlite3.connect('g13.db')
+        cur = conn.cursor()
+        cur.execute( \
+          "SELECT article, editor" + \
+          " from g13_records " + \
+          " where notified <= ? " + \
+          "   and nominated is null LIMIT ?",
+          (notification_date, max_noms_csd_cat)
+        )
+        results = cur.fetchall()
+        cur = None
+        for article_item in results:
             if change_counter > 20:
               pywikibot.output(u"Hit Bot invocation limit")
               break
-            if change_counter > max_noms_csd_cat:
+            if change_counter == max_noms_csd_cat:
               cat_limit_string = u"\n\n\03{lightred}***%s***\03{default}" \
                 % "Hit max CSD category nominations limit"
               pywikibot.output(cat_limit_string)
@@ -193,48 +200,47 @@ class CategoryListifyRobot:
               add_text( \
                 page = hasteur_talk, \
                 addText = '\nG13 Category membership exceeded ~~~~\n', \
+                summary = summary, \
                 always = True, \
-                up = False
+                up = False \
               )
               break
-            if None != page_match.match(article.title()):
-              edit_time = time.strptime( \
-                article.getLatestEditors()[0]['timestamp'],
-                "%Y-%m-%dT%H:%M:%SZ"
-              )
-              creator = article.getCreator()[0]
-              if edit_time < six_months_ago:
-                listString = listString + "# [[%s]]\n" % (article.title())
-                add_text( \
-                  page = article, \
-                  addText = '{{db-g13}}', \
-                  summary = '[[User:HasteurBot]]:Nominating for [[WP:G13|CSD:G13]]', \
-                  always = True, \
-                  up = True
-                )
-                #Notify Creator
-                user_talk_page = pywikibot.Page(
-                  self.site,
-                  'User talk:%s' % creator
-                )
-                summary = '[[User:HasteurBot]]: Notification of '+\
-                  '[[WP:G13|CSD:G13]] nomination on [[%s]]' % (article.title())
-                add_text( \
-                  page = user_talk_page, \
-                  addText = '{{subst:db-afc-notice|%s}}\n' % (article.title()), \
-                  always = True, \
-                  up = False, \
-                  create = True\
-                )
-                change_counter += 1
-        if listString != "":
+            article = pywikibot.Page(
+              self.site,
+              article_item[0]
+            )
             add_text( \
-              page = self.list, \
-              addText = '%s\n' % (listString), \
+              page = article, \
+              addText = '{{db-g13}}', \
+              summary = '[[User:HasteurBot]]:Nominating for [[WP:G13|CSD:G13]]', \
+              always = True, \
+              up = True
+            )
+            creator = article_item[1]
+            curs = conn.cursor()
+            sql_string = "UPDATE g13_records" + \
+              " set nominated = current_timestamp" + \
+              "  where " + \
+              "   article = ? " + \
+              "     and" + \
+              "   editor = ?" 
+            curs.execute(sql_string, article_item)
+            conn.commit()
+            curs = None
+            user_talk_page = pywikibot.Page(
+              self.site,
+              'User talk:%s' % creator
+            )
+            summary = '[[User:HasteurBot]]: Notification of '+\
+              '[[WP:G13|CSD:G13]] nomination on [[%s]]' % (article.title())
+            add_text( \
+              page = user_talk_page, \
+              addText = '{{subst:db-afc-notice|%s}}\n' % (article.title()), \
               always = True, \
               up = False, \
               create = True\
             )
+            change_counter += 1
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
              regexSkipUrl=None, always=False, up=False, putText=True,
              oldTextGiven=None, reorderEnabled=True, create=False):
@@ -408,7 +414,6 @@ def main(*args):
     # categories from articles will also be used as the deletion reason.
     useSummaryForDeletion = True
     catDB = CategoryDatabase()
-    return False
     action = None
     sort_by_last_name = False
     restore = False
@@ -421,9 +426,10 @@ def main(*args):
     #        genFactory.handleArg(arg)
 
     if action == 'listify':
-        if (fromGiven == False):
-            oldCatTitle = pywikibot.input(
-                u'Please enter the name of the category to nominate over:')
+        oldCatTitle='test'
+        #if (fromGiven == False):
+        #    oldCatTitle = pywikibot.input(
+        #        u'Please enter the name of the category to nominate over:')
         newCatTitle = "User:HasteurBot/Log"
         recurse=True
         bot = CategoryListifyRobot(oldCatTitle, newCatTitle, editSummary,
