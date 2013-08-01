@@ -173,7 +173,7 @@ class CategoryListifyRobot:
           datetime.datetime.now() - datetime.timedelta(days=(180)) \
         ).timetuple()
         conn = sqlite3.connect('g13.db')
-        limit = 5
+        limit = 50
         for article in listOfArticles:
             if limit <= 0:
               break
@@ -211,7 +211,7 @@ class CategoryListifyRobot:
                 )
                 summary = '[[User:HasteurBot]]: Notification of '+\
                   '[[WP:G13|CSD:G13]] potential nomination of [[%s]]' % (article.title())
-                notice = "===[[%s]] concern===\n" % (article.title()) +\
+                notice = "==[[%s]] concern==\n" % (article.title()) +\
                   "Hi there, I'm [[User:HasteurBot|HasteurBot]]. I "+ \
                   "just wanted to let you know " + \
                   "that [[%s]]," %(article.title()) +\
@@ -225,7 +225,7 @@ class CategoryListifyRobot:
                   "deletion has already occured, instructions on how you " + \
                   "may be able to retrieve it are available at " + \
                   "[[WP:REFUND/G13]].\n" + \
-                  "Thank you for your diligence. ~~~~"
+                  "Thank you for your attention. ~~~~"
                 add_text( \
                   page = user_talk_page, \
                   addText = notice, \
@@ -351,12 +351,12 @@ def add_text(page=None, addText=None, summary=None, regexSkip=None,
             if always or choice == 'y':
                 try:
                     pass
-                    #if always:
-                    #    page.put(newtext, summary,
-                    #             minorEdit=page.namespace() != 3)
-                    #else:
-                    #    page.put_async(newtext, summary,
-                    #                   minorEdit=page.namespace() != 3)
+                    if always:
+                        page.put(newtext, summary,
+                                 minorEdit=page.namespace() != 3)
+                    else:
+                        page.put_async(newtext, summary,
+                                       minorEdit=page.namespace() != 3)
                 except pywikibot.EditConflict:
                     pywikibot.output(u'Edit conflict! skip!')
                     return (False, False, always)
