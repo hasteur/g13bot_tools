@@ -172,6 +172,9 @@ class CategoryListifyRobot:
         thirty_days_ago = ( datetime.datetime.now() - \
           datetime.timedelta(days=30)
         )
+        bot_recheck_date = (
+            datetime.datetime.now() - datetime.timedelta(days=(180+30))
+        ).timetuple()
         notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:S')
         conn = sqlite3.connect('g13.db')
         cur = conn.cursor()
@@ -235,6 +238,22 @@ class CategoryListifyRobot:
                 pywikibot.output("Submission % is now a redirect" % article_item[0])
                 continue
             }
+            #Re-check date on article for edits (to be extra sure)
+            edit_time = time.strptime( \
+                article.getLatestEditors()[0]['timestamp'],
+                "%Y-%m-%dT%H:%M:%SZ"
+            )
+            if edit_time > bot_recheck_time:
+                #Page has been updated since the nudge, Not valid any more
+                curs = conn.cursor()
+                sql_string = "DELETE from g13_records" + \
+                    " WHERE article = ? and editor = ?;"
+                curs.execute(sql_string,article_item)
+                curs.commit()
+                curs = None
+                pywikibot.output("Submission % has been updated" % article_item[0])
+                continue
+
             add_text( \
               page = article, \
               addText = '{{db-g13}}', \
