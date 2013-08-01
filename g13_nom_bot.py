@@ -210,6 +210,31 @@ class CategoryListifyRobot:
               self.site,
               article_item[0]
             )
+            if (False == article.exists())
+            {
+                #Submission doesn't exisist any more, Remove it from the DB
+                curs = conn.cursor()
+                sql_string = "DELETE from g13_records" + \
+                    " WHERE article = ? and editor = ?;"
+                curs.execute(sql_string,article_item)
+                curs.commit()
+                curs = None
+                pywikibot.output("Submission %s doesn't exisist." % article_item[0])
+                continue
+            }
+            if (True == article.isRedirectPage())
+            {
+                #Submission is now a redirect.  Happy Day, it got promoted to
+                # article space!
+                curs = conn.cursor()
+                sql_string = "DELETE from g13_records" + \
+                    " WHERE article = ? and editor = ?;"
+                curs.execute(sql_string,article_item)
+                curs.commit()
+                curs = None
+                pywikibot.output("Submission % is now a redirect" % article_item[0])
+                continue
+            }
             add_text( \
               page = article, \
               addText = '{{db-g13}}', \
