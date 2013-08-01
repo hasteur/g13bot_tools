@@ -202,7 +202,7 @@ class CategoryListifyRobot:
                   addText = '', \
                   always = True, \
                   summary = 'Null Edit', \
-                  up = False, \
+                  up = True, \
                   create = False \
                 )
                 user_talk_page = pywikibot.Page(
