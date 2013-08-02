@@ -5,9 +5,9 @@ Wikipedia Bot tools revolving around AfC/G13
 
 Setup
 ===========
-1. Have SQLite, Python, and Python SQLite db hooks
+1. Have mySQL, Python, and Python mySQL db hooks
 2. Set up G13 database
-    sqlite3 g13.db < g13.sql
+    mysql DATABASE < g13.sql
 3. Run the G13 nudge bot over a category (i.e. AfC submissions by date/February 2009)
     to notify users and seed personal database with potential G13 candidates
     python g13_nudge_bot.py [-from:UNDERSCORED_CATEGORY]
