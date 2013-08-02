@@ -175,7 +175,7 @@ class CategoryListifyRobot:
         bot_recheck_date = (
             datetime.datetime.now() - datetime.timedelta(days=(180+30))
         ).timetuple()
-        notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:S')
+        notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:%S')
         conn = sqlite3.connect('g13.db')
         cur = conn.cursor()
         cur.execute( \
@@ -188,9 +188,6 @@ class CategoryListifyRobot:
         results = cur.fetchall()
         cur = None
         for article_item in results:
-            if change_counter > 20:
-              pywikibot.output(u"Hit Bot invocation limit")
-              break
             if change_counter == max_noms_csd_cat:
               cat_limit_string = u"\n\n\03{lightred}***%s***\03{default}" \
                 % "Hit max CSD category nominations limit"
@@ -208,36 +205,31 @@ class CategoryListifyRobot:
                 up = False \
               )
               break
-            #Need to remove record if the page no longer exists or has been converted to a Redirect
             article = pywikibot.Page(
               self.site,
               article_item[0]
             )
-            if (False == article.exists())
-            {
+            if False == article.exists():
                 #Submission doesn't exisist any more, Remove it from the DB
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
                     " WHERE article = ? and editor = ?;"
                 curs.execute(sql_string,article_item)
-                curs.commit()
+                conn.commit()
                 curs = None
                 pywikibot.output("Submission %s doesn't exisist." % article_item[0])
                 continue
-            }
-            if (True == article.isRedirectPage())
-            {
+            if True == article.isRedirectPage():
                 #Submission is now a redirect.  Happy Day, it got promoted to
                 # article space!
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
                     " WHERE article = ? and editor = ?;"
                 curs.execute(sql_string,article_item)
-                curs.commit()
+                conn.commit()
                 curs = None
                 pywikibot.output("Submission % is now a redirect" % article_item[0])
                 continue
-            }
             #Re-check date on article for edits (to be extra sure)
             edit_time = time.strptime( \
                 article.getLatestEditors()[0]['timestamp'],
@@ -249,7 +241,7 @@ class CategoryListifyRobot:
                 sql_string = "DELETE from g13_records" + \
                     " WHERE article = ? and editor = ?;"
                 curs.execute(sql_string,article_item)
-                curs.commit()
+                conn.commit()
                 curs = None
                 pywikibot.output("Submission % has been updated" % article_item[0])
                 continue
@@ -276,16 +268,17 @@ class CategoryListifyRobot:
               self.site,
               'User talk:%s' % creator
             )
-            summary = '[[User:HasteurBot]]: Notification of '+\
+            up_summary = '[[User:HasteurBot]]: Notification of '+\
               '[[WP:G13|CSD:G13]] nomination on [[%s]]' % (article.title())
             add_text( \
               page = user_talk_page, \
+              summary = up_summary, \
               addText = '{{subst:db-afc-notice|%s}}\n' % (article.title()), \
               always = True, \
               up = False, \
               create = True\
             )
-            change_counter += 1
+            change_counter = change_counter + 1
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
              regexSkipUrl=None, always=False, up=False, putText=True,
              oldTextGiven=None, reorderEnabled=True, create=False):
@@ -396,12 +389,12 @@ def add_text(page=None, addText=None, summary=None, regexSkip=None,
             if always or choice == 'y':
                 try:
                     pass
-                    #if always:
-                    #    page.put(newtext, summary,
-                    #             minorEdit=page.namespace() != 3)
-                    #else:
-                    #    page.put_async(newtext, summary,
-                    #                   minorEdit=page.namespace() != 3)
+                    if always:
+                        page.put(newtext, summary,
+                                 minorEdit=False)
+                    else:
+                        page.put_async(newtext, summary,
+                                       minorEdit=False)
                 except pywikibot.EditConflict:
                     pywikibot.output(u'Edit conflict! skip!')
                     return (False, False, always)
