@@ -185,9 +185,8 @@ class CategoryListifyRobot:
         cur.execute( \
           "SELECT article, editor" + \
           " from g13_records " + \
-          " where notified <= ? " + \
-          "   and nominated is null LIMIT ?",
-          (notification_date, max_noms_csd_cat)
+          " where notified <= '%s' " % notification_date + \
+          "   and nominated is null LIMIT %i" % max_noms_csd_cat
         )
         results = cur.fetchall()
         logger.debug("Results Fetched: %i" % len(results)
@@ -218,8 +217,9 @@ class CategoryListifyRobot:
                 #Submission doesn't exisist any more, Remove it from the DB
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
-                    " WHERE article = ? and editor = ?;"
-                curs.execute(sql_string,article_item)
+                    " WHERE article = '%s' " % article_item[0] + \
+                    " and editor = '%s';" % article_item[1]
+                curs.execute(sql_string)
                 conn.commit()
                 curs = None
                 logger.info("Submission %s doesn't exisist." % article_item[0])
@@ -229,8 +229,9 @@ class CategoryListifyRobot:
                 # article space!
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
-                    " WHERE article = ? and editor = ?;"
-                curs.execute(sql_string,article_item)
+                    " WHERE article = '%s' " % article_item[0] + \
+                    " and editor = '%s';" % article_item[1]
+                curs.execute(sql_string)
                 conn.commit()
                 curs = None
                 logger.info("Submission % is now a redirect" % article_item[0])
@@ -244,8 +245,9 @@ class CategoryListifyRobot:
                 #Page has been updated since the nudge, Not valid any more
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
-                    " WHERE article = ? and editor = ?;"
-                curs.execute(sql_string,article_item)
+                    " WHERE article = '%s' " % article_item[0] + \
+                    " and editor = '%s';" % article_item[1]
+                curs.execute(sql_string)
                 conn.commit()
                 curs = None
                 logger.info("Submission % has been updated" % article_item[0])
@@ -264,10 +266,10 @@ class CategoryListifyRobot:
             sql_string = "UPDATE g13_records" + \
               " set nominated = current_timestamp" + \
               "  where " + \
-              "   article = ? " + \
+              "   article = '%s' " % article_item[0] + \
               "     and" + \
-              "   editor = ?" 
-            curs.execute(sql_string, article_item)
+              "   editor = '%s'; " % article_item[1] 
+            curs.execute(sql_string)
             conn.commit()
             curs = None
             logger.debug('Updated nominated timestamp')
