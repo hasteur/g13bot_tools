@@ -164,6 +164,7 @@ class CategoryListifyRobot:
         self.recurse = recurse
 
     def run(self):
+        global logger
         listOfArticles = self.cat.articlesList(recurse = self.recurse)
         if self.subCats:
             listOfArticles += self.cat.subcategoriesList()
@@ -173,6 +174,7 @@ class CategoryListifyRobot:
           datetime.datetime.now() - datetime.timedelta(days=(180)) \
         ).timetuple()
         conn = sqlite3.connect('g13.db')
+        logger.debug('Opened DB conn')
         #Take this out once the full authorization has been given for this bot
         limit = 50
         for article in listOfArticles:
@@ -196,9 +198,10 @@ class CategoryListifyRobot:
                 cur = None
                 if results[0] > 0:
                   #We already have notified this user
-                  pywikibot.output(u"Already notifified (%s,%s)" %(creator, article.title()))
+                  logger.info(u"Already notifified (%s,%s)" %(creator, article.title()))
                   continue
                 #Perform a null edit to get the creative Category juices flowing
+                logger.info('Starting to process %s' % article.title())
                 add_text( \
                   page = article, \
                   addText = '', \
@@ -207,6 +210,7 @@ class CategoryListifyRobot:
                   up = True, \
                   create = False \
                 )
+                logger.debug('Null Edit complete')
                 user_talk_page = pywikibot.Page(
                   self.site,
                   'User talk:%s' % creator
@@ -236,10 +240,12 @@ class CategoryListifyRobot:
                   up = False, \
                   create = True\
                 )
+                logger.debug('User Notified')
                 cur = conn.cursor()
                 cur.execute("INSERT INTO g13_records (article,editor)" + \
                   "VALUES (?, ?)" , (article.title(),creator))
                 conn.commit()
+                logger.debug('DB stored')
                 cur = None
                 #Take this out when finished
                 limit = limit - 1
@@ -247,6 +253,7 @@ class CategoryListifyRobot:
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
              regexSkipUrl=None, always=False, up=False, putText=True,
              oldTextGiven=None, reorderEnabled=True, create=False):
+    global logger
     # When a page is tagged as "really well written" it has a star in the
     # interwiki links. This is a list of all the templates used (in regex
     # format) to make the stars appear.
@@ -343,9 +350,10 @@ def add_text(page=None, addText=None, summary=None, regexSkip=None,
     else:
         newtext = addText + '\n' + text
     if putText and text != newtext:
-        pywikibot.output(u"\n\n>>> \03{lightpurple}%s\03{default} <<<"
-                         % page.title())
-        pywikibot.showDiff(text, newtext)
+        #pywikibot.output(u"\n\n>>> \03{lightpurple}%s\03{default} <<<"
+        #                 % page.title())
+        #pywikibot.showDiff(text, newtext)
+        logger.debug("Editing: %s" % page.title())
     # Let's put the changes.
     while True:
         # If someone load it as module, maybe it's not so useful to put the
@@ -392,7 +400,7 @@ def add_text(page=None, addText=None, summary=None, regexSkip=None,
 
 def main(*args):
     global catDB
-
+    global logger
     fromGiven = False
     toGiven = False
     batchMode = False
@@ -432,6 +440,7 @@ def main(*args):
                 u'Please enter the name of the category to listify:')
         newCatTitle = "User:HasteurBot/Log"
         recurse=True
+        logger.info('Starting Nudge run over %s' % oldCatTitle)
         bot = CategoryListifyRobot(oldCatTitle, newCatTitle, editSummary,
                                    overwrite, showImages, subCats=True,
                                    talkPages=talkPages, recurse=recurse)
@@ -441,6 +450,17 @@ def main(*args):
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger('g13_nudge_bot')
+    logger.setLevel(logging.DEBUG)
+    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nudge', \
+        when='D', \
+        interval = 1, \
+        backupCount = 90, \
+    )
+    trfh.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    trfh.setFormatter(formater)
+    logger.addHandler(trfh)
     try:
         main()
     finally:
