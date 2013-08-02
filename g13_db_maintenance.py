@@ -24,60 +24,8 @@ __version__ = '$Id$'
 import os, re, pickle, bz2, time, datetime, sqlite3, logging
 import wikipedia as pywikibot
 from pywikibot import i18n
-
-class CategoryListifyRobot:
-    '''Creates a list containing all of the members in a category.'''
-    def __init__(self, catTitle, listTitle, editSummary, overwrite = False, showImages = False, subCats = False, talkPages = False, recurse = False):
-        self.editSummary = editSummary
-        self.overwrite = overwrite
-        self.showImages = showImages
-        self.site = pywikibot.getSite()
-        self.cat = catlib.Category(self.site, 'Category:' + catTitle)
-        self.list = pywikibot.Page(self.site, listTitle)
-        self.subCats = subCats
-        self.talkPages = talkPages
-        self.recurse = recurse
-
-    def run(self):
-        conn = sqlite3.connect('g13.db')
-        cur = conn.cursor()
-        cur.execute( \
-          "SELECT article, editor" + \
-          " from g13_records " + \
-          " where notified is not null " + \
-          "   and nominated is not null" + \
-          " ORDER BY nominated"
-        )
-        results = cur.fetchall()
-        cur = None
-        for article_item in results:
-            article = pywikibot.Page(
-              self.site,
-              article_item[0]
-            )
-            curs = conn.cursor()
-            sql_string = "UPDATE g13_records" + \
-              " set nominated = current_timestamp" + \
-              "  where " + \
-              "   article = ? " + \
-              "     and" + \
-              "   editor = ?" 
-            curs.execute(sql_string, article_item)
-            conn.commit()
-            curs = None
-            user_talk_page = pywikibot.Page(
-              self.site,
-              'User talk:%s' % creator
-            )
-            summary = '[[User:HasteurBot]]: Notification of '+\
-              '[[WP:G13|CSD:G13]] nomination on [[%s]]' % (article.title())
-            add_text( \
-              page = user_talk_page, \
-              addText = '{{subst:db-afc-notice|%s}}\n' % (article.title()), \
-              always = True, \
-              up = False, \
-              create = True\
-            )
+#DB CONFIG
+from db_handle import *
 
 def g13_db_maintenance():
   """
@@ -85,7 +33,6 @@ def g13_db_maintenance():
     appropriate
   """
   global logger
-  conn = sqlite3.connect('g13.db')
   logger.debug('Opened DB conn')
   cur = conn.cursor()
   cur.execute( \
@@ -108,7 +55,7 @@ def g13_db_maintenance():
             article_item[0])
         curs = conn.cursor()
         sql_string = "DELETE from g13_records" + \
-            " WHERE article = ? and editor = ?;"
+            " WHERE article = '%s' and editor = '%s';" % (article_item[0],article_item[1])
         curs.execute(sql_string,article_item)
         conn.commit()
         curs = None
@@ -122,8 +69,8 @@ def g13_db_maintenance():
             article_item[0])
         curs = conn.cursor()
         sql_string = "DELETE from g13_records" + \
-            " WHERE article = ? and editor = ?;"
-        curs.execute(sql_string,article_item)
+            " WHERE article = '%s' and editor = '%s';" % (article_item[0],article_item[1])
+        curs.execute(sql_string)
         conn.commit()
         curs = None
         logger.debug('Article %s was removed from DB' % \
@@ -137,8 +84,8 @@ def g13_db_maintenance():
             article.title())
         curs = conn.cursor()
         sql_string = "DELETE from g13_records" + \
-            " WHERE article = ? and editor = ?;"
-        curs.execute(sql_string,article_item)
+            " WHERE article = '%s' and editor = '%s';" % (article_item[0],article_item[1])
+        curs.execute(sql_string)
         conn.commit()
         curs = None
         logger.debug('Article %s was removed from DB' % \
