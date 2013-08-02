@@ -22,10 +22,12 @@ __version__ = '$Id$'
 # Distributed under the terms of the MIT license.
 #
 
-import os, re, pickle, bz2, time, datetime, sqlite3, sys
+import os, re, pickle, bz2, time, datetime, sys
 import wikipedia as pywikibot
 import catlib, config, pagegenerators
 from pywikibot import i18n
+#DB CONFIG
+from db_handle import *
 
 # This is required for the text that is shown when you run this script
 # with the parameter -help.
@@ -173,7 +175,6 @@ class CategoryListifyRobot:
         six_months_ago = ( \
           datetime.datetime.now() - datetime.timedelta(days=(180)) \
         ).timetuple()
-        conn = sqlite3.connect('g13.db')
         logger.debug('Opened DB conn')
         #Take this out once the full authorization has been given for this bot
         limit = 50
@@ -192,8 +193,10 @@ class CategoryListifyRobot:
                 #Notify Creator
                 #Check for already nagged
                 cur = conn.cursor()
-                cur.execute("SELECT COUNT(*) FROM g13_records where " + \
-                  "article = ? and editor = ?", (article.title(),creator))
+                sql_string = "SELECT COUNT(*) FROM g13_records where " + \
+                  "article = '%s'" % article.title() + \
+                  " and editor = '%s'" % creator
+                cur.execute(sql_string)
                 results = cur.fetchone()
                 cur = None
                 if results[0] > 0:
@@ -242,8 +245,9 @@ class CategoryListifyRobot:
                 )
                 logger.debug('User Notified')
                 cur = conn.cursor()
-                cur.execute("INSERT INTO g13_records (article,editor)" + \
-                  "VALUES (?, ?)" , (article.title(),creator))
+                sql_string = "INSERT INTO g13_records (article,editor)" + \
+                  "VALUES ('%s', '%s')" % (article.title(),creator)
+                cur.execute(sql_string)
                 conn.commit()
                 logger.debug('DB stored')
                 cur = None
