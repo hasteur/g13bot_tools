@@ -248,7 +248,7 @@ class CategoryListifyRobot:
 
             add_text( \
               page = article, \
-              addText = '{{db-g13}}', \
+              addText = '{{db-g13}}~~~~', \
               summary = '[[User:HasteurBot]]:Nominating for [[WP:G13|CSD:G13]]', \
               always = True, \
               up = True
