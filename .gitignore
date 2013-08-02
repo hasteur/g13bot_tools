@@ -2,6 +2,7 @@
 g13.db
 login-data
 user-config.py
+db_handle.py
 
 *.py[cod]
 
