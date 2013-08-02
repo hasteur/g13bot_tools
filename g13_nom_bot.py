@@ -26,6 +26,8 @@ import wikipedia as pywikibot
 import catlib, config, pagegenerators
 from pywikibot import i18n
 
+#DB CONFIG
+from db_handle import *
 # This is required for the text that is shown when you run this script
 # with the parameter -help.
 docuReplacements = {
@@ -179,7 +181,6 @@ class CategoryListifyRobot:
         ).timetuple()
         notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:%S')
         logger.debug("Notification Date: %s" % notification_date)
-        conn = sqlite3.connect('g13.db')
         cur = conn.cursor()
         cur.execute( \
           "SELECT article, editor" + \
