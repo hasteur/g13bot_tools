@@ -21,7 +21,7 @@ __version__ = '$Id$'
 # Distributed under the terms of the MIT license.
 #
 
-import os, re, pickle, bz2, time, datetime, sqlite3
+import os, re, pickle, bz2, time, datetime, sqlite3, logging
 import wikipedia as pywikibot
 import catlib, config, pagegenerators
 from pywikibot import i18n
@@ -163,12 +163,14 @@ class CategoryListifyRobot:
         self.recurse = recurse
 
     def run(self):
+        global logger
         change_counter = 0
         csd_cat = catlib.Category(self.site, \
           'Category:Candidates for speedy deletion as abandoned AfC submissions' \
         )
         csd_cat_size = len(csd_cat.articlesList())
         max_noms_csd_cat = 50 - csd_cat_size
+        logger.debug("Max Nominations from cat: %i" % max_noms_csd_cat)
         thirty_days_ago = ( datetime.datetime.now() - \
           datetime.timedelta(days=30)
         )
@@ -176,6 +178,7 @@ class CategoryListifyRobot:
             datetime.datetime.now() - datetime.timedelta(days=(180+30))
         ).timetuple()
         notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:%S')
+        logger.debug("Notification Date: %s" % notification_date)
         conn = sqlite3.connect('g13.db')
         cur = conn.cursor()
         cur.execute( \
@@ -186,6 +189,7 @@ class CategoryListifyRobot:
           (notification_date, max_noms_csd_cat)
         )
         results = cur.fetchall()
+        logger.debug("Results Fetched: %i" % len(results)
         cur = None
         for article_item in results:
             if change_counter == max_noms_csd_cat:
@@ -217,7 +221,7 @@ class CategoryListifyRobot:
                 curs.execute(sql_string,article_item)
                 conn.commit()
                 curs = None
-                pywikibot.output("Submission %s doesn't exisist." % article_item[0])
+                logger.info("Submission %s doesn't exisist." % article_item[0])
                 continue
             if True == article.isRedirectPage():
                 #Submission is now a redirect.  Happy Day, it got promoted to
@@ -228,7 +232,7 @@ class CategoryListifyRobot:
                 curs.execute(sql_string,article_item)
                 conn.commit()
                 curs = None
-                pywikibot.output("Submission % is now a redirect" % article_item[0])
+                logger.info("Submission % is now a redirect" % article_item[0])
                 continue
             #Re-check date on article for edits (to be extra sure)
             edit_time = time.strptime( \
@@ -243,7 +247,7 @@ class CategoryListifyRobot:
                 curs.execute(sql_string,article_item)
                 conn.commit()
                 curs = None
-                pywikibot.output("Submission % has been updated" % article_item[0])
+                logger.info("Submission % has been updated" % article_item[0])
                 continue
 
             add_text( \
@@ -253,6 +257,7 @@ class CategoryListifyRobot:
               always = True, \
               up = True
             )
+            logger.info("Nominated: %s' % article_item[0])
             creator = article_item[1]
             curs = conn.cursor()
             sql_string = "UPDATE g13_records" + \
@@ -264,6 +269,7 @@ class CategoryListifyRobot:
             curs.execute(sql_string, article_item)
             conn.commit()
             curs = None
+            logger.debug('Updated nominated timestamp')
             user_talk_page = pywikibot.Page(
               self.site,
               'User talk:%s' % creator
@@ -278,6 +284,7 @@ class CategoryListifyRobot:
               up = False, \
               create = True\
             )
+            logger.info("Notified %s for %s" % (creator, article_item[0]))
             change_counter = change_counter + 1
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
              regexSkipUrl=None, always=False, up=False, putText=True,
@@ -481,6 +488,17 @@ def main(*args):
 if __name__ == "__main__":
     #TODO: Short Circuiting this untill the bot is more acceptable to the
     # community
+    logger = logging.getLogger('g13_maintenance_bot')
+    logger.setLevel(logging.DEBUG)
+    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nudge', \
+        when='D', \
+        interval = 1, \
+        backupCount = 90, \
+    )
+    trfh.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    trfh.setFormatter(formatter)
+    logger.addHandler(trfh)
     try:
         main()
     finally:
