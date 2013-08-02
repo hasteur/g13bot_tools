@@ -173,8 +173,10 @@ class CategoryListifyRobot:
           datetime.datetime.now() - datetime.timedelta(days=(180)) \
         ).timetuple()
         conn = sqlite3.connect('g13.db')
+        #Take this out once the full authorization has been given for this bot
         limit = 50
         for article in listOfArticles:
+            #Take 2 lines out once the full auth is given
             if limit <= 0:
               break
             if None != page_match.match(article.title()):
@@ -239,6 +241,7 @@ class CategoryListifyRobot:
                   "VALUES (?, ?)" , (article.title(),creator))
                 conn.commit()
                 cur = None
+                #Take this out when finished
                 limit = limit - 1
         conn.close()
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
