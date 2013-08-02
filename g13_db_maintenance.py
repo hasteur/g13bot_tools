@@ -21,7 +21,7 @@ __version__ = '$Id$'
 # Distributed under the terms of the MIT license.
 #
 
-import os, re, pickle, bz2, time, datetime, sqlite3, logging
+import os, re, pickle, bz2, time, datetime, logging
 import wikipedia as pywikibot
 from pywikibot import i18n
 #DB CONFIG
