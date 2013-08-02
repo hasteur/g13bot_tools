@@ -1,2 +1,9 @@
-create table g13_records ( id auto_increment primary_key, article text, editor text, notified timestamp default current_timestamp, nominated timestamp default null);
+create table g13_records ( 
+    id bigint not null auto_increment, 
+    article varchar(255), 
+    editor varchar(255), 
+    notified timestamp default now(), 
+    nominated timestamp,
+    PRIMARY KEY (id)
+);
 create unique index g13_notify on g13_records (article,editor);
