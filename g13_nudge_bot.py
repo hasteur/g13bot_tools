@@ -178,6 +178,7 @@ class CategoryListifyRobot:
         logger.debug('Opened DB conn')
         #Take this out once the full authorization has been given for this bot
         limit = 50
+        potential_article = False
         for article in listOfArticles:
             #Take 2 lines out once the full auth is given
             if limit <= 0:
@@ -188,6 +189,7 @@ class CategoryListifyRobot:
                 article.getLatestEditors()[0]['timestamp'],
                 "%Y-%m-%dT%H:%M:%SZ"
               )
+              potential_article = True
               creator = article.getCreator()[0]
               if edit_time < six_months_ago:
                 #Notify Creator
@@ -253,6 +255,9 @@ class CategoryListifyRobot:
                 cur = None
                 #Take this out when finished
                 limit = limit - 1
+        if False == potential_article:
+            msg = "%s no longer has potential nominations" % catTitle
+            logger.critical(msg)
         conn.close()
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
              regexSkipUrl=None, always=False, up=False, putText=True,
