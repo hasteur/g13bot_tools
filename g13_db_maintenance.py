@@ -39,7 +39,7 @@ def g13_db_maintenance():
     "SELECT article, editor" + \
     " from g13_records " + \
     " where notified is not null " + \
-    "   and nominated is not null" + \
+    "   and nominated >= '1000-01-01 00:00:00'" + \
     " ORDER BY nominated"
   )
   results = cur.fetchall()
