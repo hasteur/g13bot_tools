@@ -22,7 +22,7 @@ __version__ = '$Id$'
 # Distributed under the terms of the MIT license.
 #
 
-import os, re, pickle, bz2, time, datetime, sys
+import os, re, pickle, bz2, time, datetime, sys, logging
 import wikipedia as pywikibot
 import catlib, config, pagegenerators
 from pywikibot import i18n
@@ -177,12 +177,8 @@ class CategoryListifyRobot:
         ).timetuple()
         logger.debug('Opened DB conn')
         #Take this out once the full authorization has been given for this bot
-        limit = 50
         potential_article = False
         for article in listOfArticles:
-            #Take 2 lines out once the full auth is given
-            if limit <= 0:
-              break
             if None != page_match.match(article.title()):
               pywikibot.output(article.title())
               edit_time = time.strptime( \
@@ -198,7 +194,11 @@ class CategoryListifyRobot:
                 sql_string = "SELECT COUNT(*) FROM g13_records where " + \
                   "article = '%s'" % article.title() + \
                   " and editor = '%s'" % creator
-                cur.execute(sql_string)
+                try:
+                  cur.execute(sql_string)
+                except:
+                  logger.critical("Problem with %s" % article.title())
+                  continue
                 results = cur.fetchone()
                 cur = None
                 if results[0] > 0:
@@ -212,8 +212,9 @@ class CategoryListifyRobot:
                   addText = '', \
                   always = True, \
                   summary = 'Null Edit', \
-                  up = True, \
-                  create = False \
+                  up = False, \
+                  create = False, \
+                  reorderEnabled = False \
                 )
                 logger.debug('Null Edit complete')
                 user_talk_page = pywikibot.Page(
@@ -255,7 +256,6 @@ class CategoryListifyRobot:
                 logger.debug('DB stored')
                 cur = None
                 #Take this out when finished
-                limit = limit - 1
         if False == potential_article:
             msg = "%s no longer has potential nominations" % catTitle
             logger.critical(msg)
@@ -469,7 +469,7 @@ if __name__ == "__main__":
     )
     trfh.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    trfh.setFormatter(formater)
+    trfh.setFormatter(formatter)
     logger.addHandler(trfh)
     try:
         main()
