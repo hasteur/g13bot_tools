@@ -186,10 +186,10 @@ class CategoryListifyRobot:
           "SELECT article, editor" + \
           " from g13_records " + \
           " where notified <= '%s' " % notification_date + \
-          "   and nominated is null LIMIT %i" % max_noms_csd_cat
+          "   and nominated = '0001-01-01 00:00:00' LIMIT %i" % max_noms_csd_cat
         )
         results = cur.fetchall()
-        logger.debug("Results Fetched: %i" % len(results)
+        logger.debug("Results Fetched: %i" % len(results))
         cur = None
         for article_item in results:
             if change_counter == max_noms_csd_cat:
