@@ -243,7 +243,8 @@ class CategoryListifyRobot:
                   always = True, \
                   summary = summary, \
                   up = False, \
-                  create = True\
+                  create = True, \
+                  reorderEnabled=False \
                 )
                 logger.debug('User Notified')
                 cur = conn.cursor()
