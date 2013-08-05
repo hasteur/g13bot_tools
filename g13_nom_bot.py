@@ -186,7 +186,7 @@ class CategoryListifyRobot:
           "SELECT article, editor" + \
           " from g13_records " + \
           " where notified <= '%s' " % notification_date + \
-          "   and nominated = '0001-01-01 00:00:00' LIMIT %i" % max_noms_csd_cat
+          "   and nominated = '0000-00-00 00:00:00' LIMIT %i" % max_noms_csd_cat
         )
         results = cur.fetchall()
         logger.debug("Results Fetched: %i" % len(results))
@@ -217,9 +217,9 @@ class CategoryListifyRobot:
                 #Submission doesn't exisist any more, Remove it from the DB
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
-                    " WHERE article = '%s' " % article_item[0] + \
-                    " and editor = '%s';" % article_item[1]
-                curs.execute(sql_string)
+                    " WHERE article = %s " + \
+                    " and editor = %s;"  
+                curs.execute(sql_string,article_item)
                 conn.commit()
                 curs = None
                 logger.info("Submission %s doesn't exisist." % article_item[0])
@@ -229,28 +229,28 @@ class CategoryListifyRobot:
                 # article space!
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
-                    " WHERE article = '%s' " % article_item[0] + \
-                    " and editor = '%s';" % article_item[1]
-                curs.execute(sql_string)
+                    " WHERE article = %s " + \
+                    " and editor = %s;"  
+                curs.execute(sql_string,article_item)
                 conn.commit()
                 curs = None
-                logger.info("Submission % is now a redirect" % article_item[0])
+                logger.info("Submission %s is now a redirect" % article_item[0])
                 continue
             #Re-check date on article for edits (to be extra sure)
             edit_time = time.strptime( \
                 article.getLatestEditors()[0]['timestamp'],
                 "%Y-%m-%dT%H:%M:%SZ"
             )
-            if edit_time > bot_recheck_time:
+            if edit_time > bot_recheck_date:
                 #Page has been updated since the nudge, Not valid any more
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
-                    " WHERE article = '%s' " % article_item[0] + \
-                    " and editor = '%s';" % article_item[1]
-                curs.execute(sql_string)
+                    " WHERE article = %s " + \
+                    " and editor = %s;"  
+                curs.execute(sql_string,article_item)
                 conn.commit()
                 curs = None
-                logger.info("Submission % has been updated" % article_item[0])
+                logger.info("Submission %s has been updated" % article_item[0])
                 continue
 
             add_text( \
@@ -260,16 +260,16 @@ class CategoryListifyRobot:
               always = True, \
               up = True
             )
-            logger.info("Nominated: %s' % article_item[0])
+            logger.info("Nominated: %s" % article_item[0])
             creator = article_item[1]
             curs = conn.cursor()
             sql_string = "UPDATE g13_records" + \
               " set nominated = current_timestamp" + \
               "  where " + \
-              "   article = '%s' " % article_item[0] + \
+              "   article = %s " + \
               "     and" + \
-              "   editor = '%s'; " % article_item[1] 
-            curs.execute(sql_string)
+              "   editor = %s; " 
+            curs.execute(sql_string, article_item)
             conn.commit()
             curs = None
             logger.debug('Updated nominated timestamp')
