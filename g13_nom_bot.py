@@ -182,11 +182,12 @@ class CategoryListifyRobot:
         notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:%S')
         logger.debug("Notification Date: %s" % notification_date)
         cur = conn.cursor()
-        cur.execute( \
-          "SELECT article, editor" + \
+        sql_string = "SELECT article, editor" + \
           " from g13_records " + \
-          " where notified <= '%s' " % notification_date + \
-          "   and nominated = '0000-00-00 00:00:00' LIMIT %i" % max_noms_csd_cat
+          " where notified <= %s " + \
+          "   and nominated = '0000-00-00 00:00:00' LIMIT %i"
+        cur.execute( sql_string, \
+            (notification_date, max_noms_csd_cat)
         )
         results = cur.fetchall()
         logger.debug("Results Fetched: %i" % len(results))
