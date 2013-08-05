@@ -192,10 +192,10 @@ class CategoryListifyRobot:
                 #Check for already nagged
                 cur = conn.cursor()
                 sql_string = "SELECT COUNT(*) FROM g13_records where " + \
-                  "article = '%s'" % article.title() + \
-                  " and editor = '%s'" % creator
+                  "article = %s" + \
+                  " and editor = %s;"
                 try:
-                  cur.execute(sql_string)
+                  cur.execute(sql_string, (article.title(), creator))
                 except:
                   logger.critical("Problem with %s" % article.title())
                   continue
@@ -250,8 +250,8 @@ class CategoryListifyRobot:
                 logger.debug('User Notified')
                 cur = conn.cursor()
                 sql_string = "INSERT INTO g13_records (article,editor)" + \
-                  "VALUES ('%s', '%s')" % (article.title(),creator)
-                cur.execute(sql_string)
+                  "VALUES (%s, %s)" 
+                cur.execute(sql_string, (article.title(),creator))
                 conn.commit()
                 logger.debug('DB stored')
                 cur = None
