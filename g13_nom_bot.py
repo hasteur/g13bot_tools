@@ -492,9 +492,9 @@ def main(*args):
 if __name__ == "__main__":
     #TODO: Short Circuiting this untill the bot is more acceptable to the
     # community
-    logger = logging.getLogger('g13_maintenance_bot')
+    logger = logging.getLogger('g13_nom_bot')
     logger.setLevel(logging.DEBUG)
-    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nudge', \
+    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nom', \
         when='D', \
         interval = 1, \
         backupCount = 90, \
@@ -503,6 +503,7 @@ if __name__ == "__main__":
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     trfh.setFormatter(formatter)
     logger.addHandler(trfh)
+    trfh.doRollover()
     try:
         main()
     finally:

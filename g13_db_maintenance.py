@@ -101,15 +101,16 @@ def main():
 if __name__ == "__main__":
     logger = logging.getLogger('g13_maintenance_bot')
     logger.setLevel(logging.DEBUG)
-    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nudge', \
+    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_db_maintenance', \
         when='D', \
-        interval = 1, \
+        interval = 14, \
         backupCount = 90, \
     )
     trfh.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     trfh.setFormatter(formatter)
     logger.addHandler(trfh)
+    trfh.doRollover()
     try:
         main()
     finally:
