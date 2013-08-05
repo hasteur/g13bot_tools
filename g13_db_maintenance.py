@@ -49,13 +49,14 @@ def g13_db_maintenance():
       pywikibot.getSite(),
       article_item[0]
     )
+    print article_item[0]
     if False == article.exists():
         #Submission doesn't exisist any more, Remove it from the DB
         logger.info('Article %s doesn\'t exisist any more' % \
             article_item[0])
         curs = conn.cursor()
         sql_string = "DELETE from g13_records" + \
-            " WHERE article = '%s' and editor = '%s';" % (article_item[0],article_item[1])
+            " WHERE article = %s and editor = %s;"
         curs.execute(sql_string,article_item)
         conn.commit()
         curs = None
@@ -69,8 +70,8 @@ def g13_db_maintenance():
             article_item[0])
         curs = conn.cursor()
         sql_string = "DELETE from g13_records" + \
-            " WHERE article = '%s' and editor = '%s';" % (article_item[0],article_item[1])
-        curs.execute(sql_string)
+            " WHERE article = %s and editor = %s;"
+        curs.execute(sql_string,article_item)
         conn.commit()
         curs = None
         logger.debug('Article %s was removed from DB' % \
@@ -84,8 +85,8 @@ def g13_db_maintenance():
             article.title())
         curs = conn.cursor()
         sql_string = "DELETE from g13_records" + \
-            " WHERE article = '%s' and editor = '%s';" % (article_item[0],article_item[1])
-        curs.execute(sql_string)
+            " WHERE article = %s and editor = %s;"
+        curs.execute(sql_string,article_item)
         conn.commit()
         curs = None
         logger.debug('Article %s was removed from DB' % \
