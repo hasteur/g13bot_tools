@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-Syntax: python g13_nom_bot.py<F3>
+Scripts to manage categories.
 
+Syntax: python g13_nudge_bot.py [-from:UNDERSCORED_CATEGORY]
 """
 
 #
@@ -21,13 +22,13 @@ __version__ = '$Id$'
 # Distributed under the terms of the MIT license.
 #
 
-import os, re, pickle, bz2, time, datetime, logging
+import os, re, pickle, bz2, time, datetime, sys, logging
 import wikipedia as pywikibot
 import catlib, config, pagegenerators
 from pywikibot import i18n
-
 #DB CONFIG
 from db_handle import *
+
 # This is required for the text that is shown when you run this script
 # with the parameter -help.
 docuReplacements = {
@@ -159,6 +160,7 @@ class CategoryListifyRobot:
         self.showImages = showImages
         self.site = pywikibot.getSite()
         self.cat = catlib.Category(self.site, 'Category:' + catTitle)
+        self.catTitle = catTitle
         self.list = pywikibot.Page(self.site, listTitle)
         self.subCats = subCats
         self.talkPages = talkPages
@@ -166,139 +168,103 @@ class CategoryListifyRobot:
 
     def run(self):
         global logger
-        change_counter = 0
-        csd_cat = catlib.Category(self.site, \
-          'Category:Candidates for speedy deletion as abandoned AfC submissions' \
-        )
-        csd_cat_size = len(csd_cat.articlesList())
-        max_noms_csd_cat = 50 - csd_cat_size
-        logger.debug("Max Nominations from cat: %i" % max_noms_csd_cat)
-        thirty_days_ago = ( datetime.datetime.now() - \
-          datetime.timedelta(days=30)
-        )
-        bot_recheck_date = (
-            datetime.datetime.now() - datetime.timedelta(days=(180+30))
+        listOfArticles = self.cat.articlesList(recurse = self.recurse)
+        if self.subCats:
+            listOfArticles += self.cat.subcategoriesList()
+        listString = ""
+        page_match = re.compile('Wikipedia talk:Articles for creation/')
+        six_months_ago = ( \
+          datetime.datetime.now() - datetime.timedelta(days=(180)) \
         ).timetuple()
-        notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:%S')
-        logger.debug("Notification Date: %s" % notification_date)
-        cur = conn.cursor()
-        sql_string = "SELECT article, editor" + \
-          " from g13_records " + \
-          " where notified <= %s " + \
-          "   and nominated = '0000-00-00 00:00:00' " + \
-          " LIMIT %i" % max_noms_csd_cat
-        cur.execute( sql_string, \
-            (notification_date)
-        )
-        results = cur.fetchall()
-        logger.debug("Results Fetched: %i" % len(results))
-        cur = None
-        for article_item in results:
-            if change_counter == max_noms_csd_cat:
-              cat_limit_string = u"\n\n\03{lightred}***%s***\03{default}" \
-                % "Hit max CSD category nominations limit"
-              pywikibot.output(cat_limit_string)
-              hasteur_talk = pywikibot.Page(
-                self.site,
-                'User talk:Hasteur'
-              )
-              summary = "[[User:HasteurBot]]: G13 category is '''full'''"
-              add_text( \
-                page = hasteur_talk, \
-                addText = '\nG13 Category membership exceeded ~~~~\n', \
-                summary = summary, \
-                always = True, \
-                up = False \
-              )
-              break
-            article = None
-            try:
-                article = pywikibot.Page(
-                  self.site,
-                  article_item[0]
-                )
-            except:
-                logger.critical("Problem with %s" % article_item[0])
-                continue
-            if False == article.exists():
-                #Submission doesn't exisist any more, Remove it from the DB
-                curs = conn.cursor()
-                sql_string = "DELETE from g13_records" + \
-                    " WHERE article = %s " + \
-                    " and editor = %s;"  
-                curs.execute(sql_string,article_item)
-                conn.commit()
-                curs = None
-                logger.info("Submission %s doesn't exisist." % article_item[0])
-                continue
-            if True == article.isRedirectPage():
-                #Submission is now a redirect.  Happy Day, it got promoted to
-                # article space!
-                curs = conn.cursor()
-                sql_string = "DELETE from g13_records" + \
-                    " WHERE article = %s " + \
-                    " and editor = %s;"  
-                curs.execute(sql_string,article_item)
-                conn.commit()
-                curs = None
-                logger.info("Submission %s is now a redirect" % article_item[0])
-                continue
-            #Re-check date on article for edits (to be extra sure)
-            edit_time = time.strptime( \
+        logger.debug('Opened DB conn')
+        #Take this out once the full authorization has been given for this bot
+        potential_article = False
+        for article in listOfArticles:
+            if None != page_match.match(article.title()):
+              pywikibot.output(article.title())
+              edit_time = time.strptime( \
                 article.getLatestEditors()[0]['timestamp'],
                 "%Y-%m-%dT%H:%M:%SZ"
-            )
-            if edit_time > bot_recheck_date:
-                #Page has been updated since the nudge, Not valid any more
-                curs = conn.cursor()
-                sql_string = "DELETE from g13_records" + \
-                    " WHERE article = %s " + \
-                    " and editor = %s;"  
-                curs.execute(sql_string,article_item)
+              )
+              potential_article = True
+              creator = article.getCreator()[0]
+              if edit_time < six_months_ago:
+                #Notify Creator
+                #Check for already nagged
+                cur = conn.cursor()
+                sql_string = "SELECT COUNT(*) FROM g13_records where " + \
+                  "article = %s" + \
+                  " and editor = %s;"
+                try:
+                  cur.execute(sql_string, (article.title(), creator))
+                except:
+                  logger.critical("Problem with %s" % article.title())
+                  continue
+                results = cur.fetchone()
+                cur = None
+                if results[0] > 0:
+                  #We already have notified this user
+                  logger.info(u"Already notifified (%s,%s)" %(creator, article.title()))
+                  continue
+                #Perform a null edit to get the creative Category juices flowing
+                logger.info('Starting to process %s' % article.title())
+                add_text( \
+                  page = article, \
+                  addText = '', \
+                  always = True, \
+                  summary = 'Null Edit', \
+                  up = False, \
+                  create = False, \
+                  reorderEnabled = False \
+                )
+                logger.debug('Null Edit complete')
+                user_talk_page = pywikibot.Page(
+                  self.site,
+                  'User talk:%s' % creator
+                )
+                summary = '[[User:HasteurBot]]: Notification of '+\
+                  '[[WP:G13|CSD:G13]] potential nomination of [[%s]]' % (article.title())
+                notice = "==[[%s]] concern==\n" % (article.title()) +\
+                  "Hi there, I'm [[User:HasteurBot|HasteurBot]]. I "+ \
+                  "just wanted to let you know " + \
+                  "that [[%s]]," %(article.title()) +\
+                  " a page you created has not been edited in at least 180" + \
+                  " days.  The Articles for Creation space is not an" + \
+                  " indefinite storage location for content that is not " + \
+                  "appropriate for articlespace.\n" + \
+                  "If your submission is not edited soon, it could be " + \
+                  "nominated for deletion.  If you would like to attempt " + \
+                  "to save it, you will need to improve it.\nIf the " + \
+                  "deletion has already occured, instructions on how you " + \
+                  "may be able to retrieve it are available at " + \
+                  "[[WP:REFUND/G13]].\n" + \
+                  "Thank you for your attention. ~~~~"
+                add_text( \
+                  page = user_talk_page, \
+                  addText = notice, \
+                  always = True, \
+                  summary = summary, \
+                  up = False, \
+                  create = True, \
+                  reorderEnabled=False \
+                )
+                logger.debug('User Notified')
+                cur = conn.cursor()
+                sql_string = "INSERT INTO g13_records (article,editor)" + \
+                  "VALUES (%s, %s)" 
+                cur.execute(sql_string, (article.title(),creator))
                 conn.commit()
-                curs = None
-                logger.info("Submission %s has been updated" % article_item[0])
-                continue
-
-            add_text( \
-              page = article, \
-              addText = '{{db-g13}}', \
-              summary = '[[User:HasteurBot]]:Nominating for [[WP:G13|CSD:G13]]', \
-              always = True, \
-              up = True
-            )
-            logger.info("Nominated: %s" % article_item[0])
-            creator = article_item[1]
-            curs = conn.cursor()
-            sql_string = "UPDATE g13_records" + \
-              " set nominated = current_timestamp" + \
-              "  where " + \
-              "   article = %s " + \
-              "     and" + \
-              "   editor = %s; " 
-            curs.execute(sql_string, article_item)
-            conn.commit()
-            curs = None
-            logger.debug('Updated nominated timestamp')
-            user_talk_page = pywikibot.Page(
-              self.site,
-              'User talk:%s' % creator
-            )
-            up_summary = '[[User:HasteurBot]]: Notification of '+\
-              '[[WP:G13|CSD:G13]] nomination on [[%s]]' % (article.title())
-            add_text( \
-              page = user_talk_page, \
-              summary = up_summary, \
-              addText = '{{subst:db-afc-notice|%s}}~~~~\n' % (article.title()), \
-              always = True, \
-              up = False, \
-              create = True\
-            )
-            logger.info("Notified %s for %s" % (creator, article_item[0]))
-            change_counter = change_counter + 1
+                logger.debug('DB stored')
+                cur = None
+                #Take this out when finished
+        if False == potential_article:
+            msg = "%s no longer has potential nominations" % self.catTitle
+            logger.critical(msg)
+        conn.close()
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
              regexSkipUrl=None, always=False, up=False, putText=True,
              oldTextGiven=None, reorderEnabled=True, create=False):
+    global logger
     # When a page is tagged as "really well written" it has a star in the
     # interwiki links. This is a list of all the templates used (in regex
     # format) to make the stars appear.
@@ -395,9 +361,10 @@ def add_text(page=None, addText=None, summary=None, regexSkip=None,
     else:
         newtext = addText + '\n' + text
     if putText and text != newtext:
-        pywikibot.output(u"\n\n>>> \03{lightpurple}%s\03{default} <<<"
-                         % page.title())
+        #pywikibot.output(u"\n\n>>> \03{lightpurple}%s\03{default} <<<"
+        #                 % page.title())
         #pywikibot.showDiff(text, newtext)
+        logger.debug("Editing: %s" % page.title())
     # Let's put the changes.
     while True:
         # If someone load it as module, maybe it's not so useful to put the
@@ -408,10 +375,10 @@ def add_text(page=None, addText=None, summary=None, regexSkip=None,
                     pass
                     if always:
                         page.put(newtext, summary,
-                                 minorEdit=False)
+                                 minorEdit=page.namespace() != 3)
                     else:
                         page.put_async(newtext, summary,
-                                       minorEdit=False)
+                                       minorEdit=page.namespace() != 3)
                 except pywikibot.EditConflict:
                     pywikibot.output(u'Edit conflict! skip!')
                     return (False, False, always)
@@ -444,7 +411,7 @@ def add_text(page=None, addText=None, summary=None, regexSkip=None,
 
 def main(*args):
     global catDB
-
+    global logger
     fromGiven = False
     toGiven = False
     batchMode = False
@@ -474,19 +441,17 @@ def main(*args):
     restore = False
     create_pages = False
     action = 'listify'
-    #for arg in pywikibot.handleArgs(*args):
-    #    if arg == 'listify':
-    #        action = 'listify'
-    #    else:
-    #        genFactory.handleArg(arg)
-
+    for arg in pywikibot.handleArgs(*args):
+        if arg.startswith('-from:'):
+            oldCatTitle = arg[len('-from:'):].replace('_', ' ')
+            fromGiven = True
     if action == 'listify':
-        oldCatTitle='test'
-        #if (fromGiven == False):
-        #    oldCatTitle = pywikibot.input(
-        #        u'Please enter the name of the category to nominate over:')
+        if (fromGiven == False):
+            oldCatTitle = pywikibot.input(
+                u'Please enter the name of the category to listify:')
         newCatTitle = "User:HasteurBot/Log"
         recurse=True
+        logger.info('Starting Nudge run over %s' % oldCatTitle)
         bot = CategoryListifyRobot(oldCatTitle, newCatTitle, editSummary,
                                    overwrite, showImages, subCats=True,
                                    talkPages=talkPages, recurse=recurse)
@@ -496,20 +461,17 @@ def main(*args):
 
 
 if __name__ == "__main__":
-    #TODO: Short Circuiting this untill the bot is more acceptable to the
-    # community
-    logger = logging.getLogger('g13_nom_bot')
+    logger = logging.getLogger('g13_nudge_bot')
     logger.setLevel(logging.DEBUG)
-    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nom', \
+    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nudge', \
         when='D', \
         interval = 1, \
         backupCount = 90, \
     )
-    trfh.setLevel(logging.DEBUG)
+    trfh.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     trfh.setFormatter(formatter)
     logger.addHandler(trfh)
-    trfh.doRollover()
     try:
         main()
     finally:
