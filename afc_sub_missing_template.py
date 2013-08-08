@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-Scripts to manage categories.
+Script to fix categories as needed
 
-Syntax: python g13_nudge_bot.py [-from:UNDERSCORED_CATEGORY]
+Syntax: python afc_sub_missing_template.py
 """
 
 #
@@ -26,8 +26,6 @@ import os, re, pickle, bz2, time, datetime, sys, logging
 import wikipedia as pywikibot
 import catlib, config, pagegenerators
 from pywikibot import i18n
-#DB CONFIG
-from db_handle import *
 
 # This is required for the text that is shown when you run this script
 # with the parameter -help.
@@ -172,243 +170,18 @@ class CategoryListifyRobot:
         if self.subCats:
             listOfArticles += self.cat.subcategoriesList()
         listString = ""
-        page_match = re.compile('Wikipedia talk:Articles for creation/')
-        six_months_ago = ( \
-          datetime.datetime.now() - datetime.timedelta(days=(180)) \
-        ).timetuple()
-        logger.debug('Opened DB conn')
         #Take this out once the full authorization has been given for this bot
-        potential_article = False
         for article in listOfArticles:
-            if None != page_match.match(article.title()):
-              pywikibot.output(article.title())
-              edit_time = time.strptime( \
-                article.getLatestEditors()[0]['timestamp'],
-                "%Y-%m-%dT%H:%M:%SZ"
-              )
-              potential_article = True
-              creator = article.getCreator()[0]
-              if edit_time < six_months_ago:
-                #Notify Creator
-                #Check for already nagged
-                cur = conn.cursor()
-                sql_string = "SELECT COUNT(*) FROM g13_records where " + \
-                  "article = %s" + \
-                  " and editor = %s;"
-                try:
-                  cur.execute(sql_string, (article.title(), creator))
-                except:
-                  logger.critical("Problem with %s" % article.title())
-                  continue
-                results = cur.fetchone()
-                cur = None
-                if results[0] > 0:
-                  #We already have notified this user
-                  logger.info(u"Already notifified (%s,%s)" %(creator, article.title()))
-                  continue
-                #Perform a null edit to get the creative Category juices flowing
-                logger.info('Starting to process %s' % article.title())
-                add_text( \
-                  page = article, \
-                  addText = '', \
-                  always = True, \
-                  summary = 'Null Edit', \
-                  up = False, \
-                  create = False, \
-                  reorderEnabled = False \
-                )
-                logger.debug('Null Edit complete')
-                user_talk_page = pywikibot.Page(
-                  self.site,
-                  'User talk:%s' % creator
-                )
-                summary = '[[User:HasteurBot]]: Notification of '+\
-                  '[[WP:G13|CSD:G13]] potential nomination of [[%s]]' % (article.title())
-                notice = "==[[%s]] concern==\n" % (article.title()) +\
-                  "Hi there, I'm [[User:HasteurBot|HasteurBot]]. I "+ \
-                  "just wanted to let you know " + \
-                  "that [[%s]]," %(article.title()) +\
-                  " a page you created has not been edited in at least 180" + \
-                  " days.  The Articles for Creation space is not an" + \
-                  " indefinite storage location for content that is not " + \
-                  "appropriate for articlespace.\n" + \
-                  "If your submission is not edited soon, it could be " + \
-                  "nominated for deletion.  If you would like to attempt " + \
-                  "to save it, you will need to improve it.\nIf the " + \
-                  "deletion has already occured, instructions on how you " + \
-                  "may be able to retrieve it are available at " + \
-                  "[[WP:REFUND/G13]].\n" + \
-                  "Thank you for your attention. ~~~~"
-                add_text( \
-                  page = user_talk_page, \
-                  addText = notice, \
-                  always = True, \
-                  summary = summary, \
-                  up = False, \
-                  create = True, \
-                  reorderEnabled=False \
-                )
-                logger.debug('User Notified')
-                cur = conn.cursor()
-                sql_string = "INSERT INTO g13_records (article,editor)" + \
-                  "VALUES (%s, %s)" 
-                cur.execute(sql_string, (article.title(),creator))
-                conn.commit()
-                logger.debug('DB stored')
-                cur = None
-                #Take this out when finished
-        if False == potential_article:
-            msg = "%s no longer has potential nominations" % self.catTitle
-            logger.critical(msg)
-        conn.close()
-def add_text(page=None, addText=None, summary=None, regexSkip=None,
-             regexSkipUrl=None, always=False, up=False, putText=True,
-             oldTextGiven=None, reorderEnabled=True, create=False):
-    global logger
-    # When a page is tagged as "really well written" it has a star in the
-    # interwiki links. This is a list of all the templates used (in regex
-    # format) to make the stars appear.
-    starsList = [
-        u'bueno',
-        u'bom interwiki',
-        u'cyswllt[ _]erthygl[ _]ddethol', u'dolen[ _]ed',
-        u'destacado', u'destaca[tu]',
-        u'enllaç[ _]ad',
-        u'enllaz[ _]ad',
-        u'leam[ _]vdc',
-        u'legătură[ _]a[bcf]',
-        u'liamm[ _]pub',
-        u'lien[ _]adq',
-        u'lien[ _]ba',
-        u'liên[ _]kết[ _]bài[ _]chất[ _]lượng[ _]tốt',
-        u'liên[ _]kết[ _]chọn[ _]lọc',
-        u'ligam[ _]adq',
-        u'ligoelstara',
-        u'ligoleginda',
-        u'link[ _][afgu]a', u'link[ _]adq', u'link[ _]f[lm]', u'link[ _]km',
-        u'link[ _]sm', u'linkfa',
-        u'na[ _]lotura',
-        u'nasc[ _]ar',
-        u'tengill[ _][úg]g',
-        u'ua',
-        u'yüm yg',
-        u'רא',
-        u'وصلة مقالة جيدة',
-        u'وصلة مقالة مختارة',
-    ]
-
-    errorCount = 0
-    site = pywikibot.getSite()
-    pathWiki = site.family.nicepath(site.lang)
-    site = pywikibot.getSite()
-    if oldTextGiven is None:
-        try:
-            text = page.get()
-        except pywikibot.NoPage:
-            if create:
-                pywikibot.output(u"%s doesn't exist, creating it!"
-                                 % page.title())
-                text = u''
-            else:
-                pywikibot.output(u"%s doesn't exist, skip!" % page.title())
-                return (False, False, always)
-        except pywikibot.IsRedirectPage:
-            pywikibot.output(u"%s is a redirect, skip!" % page.title())
-            return (False, False, always)
-    else:
-        text = oldTextGiven
-    # If not up, text put below
-    if not up:
-        newtext = text
-        # Translating the \\n into binary \n
-        addText = addText.replace('\\n', '\n')
-        if (reorderEnabled):
-            # Getting the categories
-            categoriesInside = pywikibot.getCategoryLinks(newtext, site)
-            # Deleting the categories
-            newtext = pywikibot.removeCategoryLinks(newtext, site)
-            # Getting the interwiki
-            interwikiInside = pywikibot.getLanguageLinks(newtext, site)
-            # Removing the interwiki
-            newtext = pywikibot.removeLanguageLinks(newtext, site)
-
-            # Adding the text
-            newtext += u"\n%s" % addText
-            # Reputting the categories
-            newtext = pywikibot.replaceCategoryLinks(newtext,
-                                                     categoriesInside, site,
-                                                     True)
-            # Dealing the stars' issue
-            allstars = []
-            starstext = pywikibot.removeDisabledParts(text)
-            for star in starsList:
-                regex = re.compile('(\{\{(?:template:|)%s\|.*?\}\}[\s]*)'
-                                   % star, re.I)
-                found = regex.findall(starstext)
-                if found != []:
-                    newtext = regex.sub('', newtext)
-                    allstars += found
-            if allstars != []:
-                newtext = newtext.strip() + '\r\n\r\n'
-                allstars.sort()
-                for element in allstars:
-                    newtext += '%s\r\n' % element.strip()
-            # Adding the interwiki
-            newtext = pywikibot.replaceLanguageLinks(newtext, interwikiInside,
-                                                     site)
-        else:
-            newtext += u"\n%s" % addText
-    else:
-        newtext = addText + '\n' + text
-    if putText and text != newtext:
-        #pywikibot.output(u"\n\n>>> \03{lightpurple}%s\03{default} <<<"
-        #                 % page.title())
-        #pywikibot.showDiff(text, newtext)
-        logger.debug("Editing: %s" % page.title())
-    # Let's put the changes.
-    while True:
-        # If someone load it as module, maybe it's not so useful to put the
-        # text in the page
-        if putText:
-            if always or choice == 'y':
-                try:
-                    pass
-                    if always:
-                        page.put(newtext, summary,
-                                 minorEdit=page.namespace() != 3)
-                    else:
-                        page.put_async(newtext, summary,
-                                       minorEdit=page.namespace() != 3)
-                except pywikibot.EditConflict:
-                    pywikibot.output(u'Edit conflict! skip!')
-                    return (False, False, always)
-                except pywikibot.ServerError:
-                    errorCount += 1
-                    if errorCount < 5:
-                        pywikibot.output(u'Server Error! Wait..')
-                        time.sleep(5)
-                        continue
-                    else:
-                        raise pywikibot.ServerError(u'Fifth Server Error!')
-                except pywikibot.SpamfilterError, e:
-                    pywikibot.output(
-                        u'Cannot change %s because of blacklist entry %s'
-                        % (page.title(), e.url))
-                    return (False, False, always)
-                except pywikibot.PageNotSaved, error:
-                    pywikibot.output(u'Error putting page: %s' % error.args)
-                    return (False, False, always)
-                except pywikibot.LockedPage:
-                    pywikibot.output(u'Skipping %s (locked page)'
-                                     % page.title())
-                    return (False, False, always)
-                else:
-                    # Break only if the errors are one after the other...
-                    errorCount = 0
-                    return (True, True, always)
-        else:
-            return (text, newtext, always)
-
+          #Do Something
+          article_text = article.get()
+          if 'AFC submission' in article_text:
+            logger.info(article.title())
+            newtext = re.sub(u'\[\[Category:AfC_submissions_with_missing_AfC_template\]\]', \
+              u'', \
+              article_text \
+            )
+            summary = u'[[User:HasteurBot]] Task 3: Removing defect category on no longer valid submission'
+            #article.put(newtext, summary, True)
 def main(*args):
     global catDB
     global logger
@@ -441,6 +214,7 @@ def main(*args):
     restore = False
     create_pages = False
     action = 'listify'
+    fromGiven = True
     for arg in pywikibot.handleArgs(*args):
         if arg.startswith('-from:'):
             oldCatTitle = arg[len('-from:'):].replace('_', ' ')
@@ -449,9 +223,9 @@ def main(*args):
         if (fromGiven == False):
             oldCatTitle = pywikibot.input(
                 u'Please enter the name of the category to listify:')
+        oldCatTitle= u'AfC submissions with missing AfC template'
         newCatTitle = "User:HasteurBot/Log"
         recurse=True
-        logger.info('Starting Nudge run over %s' % oldCatTitle)
         bot = CategoryListifyRobot(oldCatTitle, newCatTitle, editSummary,
                                    overwrite, showImages, subCats=True,
                                    talkPages=talkPages, recurse=recurse)
@@ -461,11 +235,11 @@ def main(*args):
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger('g13_nudge_bot')
+    logger = logging.getLogger('afc_sub_temp')
     logger.setLevel(logging.DEBUG)
-    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nudge', \
+    trfh = logging.handlers.TimedRotatingFileHandler('logs/afc_sub_template', \
         when='D', \
-        interval = 1, \
+        interval = 14, \
         backupCount = 90, \
     )
     trfh.setLevel(logging.INFO)
