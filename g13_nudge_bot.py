@@ -160,6 +160,7 @@ class CategoryListifyRobot:
         self.showImages = showImages
         self.site = pywikibot.getSite()
         self.cat = catlib.Category(self.site, 'Category:' + catTitle)
+        self.catTitle = catTitle
         self.list = pywikibot.Page(self.site, listTitle)
         self.subCats = subCats
         self.talkPages = talkPages
@@ -257,7 +258,7 @@ class CategoryListifyRobot:
                 cur = None
                 #Take this out when finished
         if False == potential_article:
-            msg = "%s no longer has potential nominations" % catTitle
+            msg = "%s no longer has potential nominations" % self.catTitle
             logger.critical(msg)
         conn.close()
 def add_text(page=None, addText=None, summary=None, regexSkip=None,

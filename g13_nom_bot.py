@@ -185,9 +185,10 @@ class CategoryListifyRobot:
         sql_string = "SELECT article, editor" + \
           " from g13_records " + \
           " where notified <= %s " + \
-          "   and nominated = '0000-00-00 00:00:00' LIMIT %i"
+          "   and nominated = '0000-00-00 00:00:00' " + \
+          " LIMIT %i" % max_noms_csd_cat
         cur.execute( sql_string, \
-            (notification_date, max_noms_csd_cat)
+            (notification_date)
         )
         results = cur.fetchall()
         logger.debug("Results Fetched: %i" % len(results))
@@ -210,10 +211,15 @@ class CategoryListifyRobot:
                 up = False \
               )
               break
-            article = pywikibot.Page(
-              self.site,
-              article_item[0]
-            )
+            article = None
+            try:
+                article = pywikibot.Page(
+                  self.site,
+                  article_item[0]
+                )
+            except:
+                logger.critical("Problem with %s" % article_item[0])
+                continue
             if False == article.exists():
                 #Submission doesn't exisist any more, Remove it from the DB
                 curs = conn.cursor()

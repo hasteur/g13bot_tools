@@ -39,16 +39,19 @@ def g13_db_maintenance():
     "SELECT article, editor" + \
     " from g13_records " + \
     " where notified is not null " + \
-    "   and nominated >= '1000-01-01 00:00:00'" + \
-    " ORDER BY nominated"
+    " ORDER BY notified"
   )
   results = cur.fetchall()
   cur = None
   for article_item in results:
-    article = pywikibot.Page(
-      pywikibot.getSite(),
-      article_item[0]
-    )
+    try: 
+        article = pywikibot.Page(
+          pywikibot.getSite(),
+          article_item[0]
+        )
+    except:
+        print "Problem with %s" % article_item[0]
+        continue
     print article_item[0]
     if False == article.exists():
         #Submission doesn't exisist any more, Remove it from the DB
@@ -79,19 +82,30 @@ def g13_db_maintenance():
         continue
     article_text = article.get()
     if '{{db-g13}}' not in article_text:
-        #Hrm... Article no longer has my CSD template on it. Remove it
-        # from the DB
-        logger.info('Article %s no longer has my csd template on it' % \
-            article.title())
+        #Check to see if we've ever nominated this article
+        double_check_sql = "SELECT article, editor " + \
+            "  from g13_records " + \
+            "  where article = %s " + \
+            "     and editor = %s " + \
+            "     and nominated >= '1000-01-01 00:00:00';"
         curs = conn.cursor()
-        sql_string = "DELETE from g13_records" + \
-            " WHERE article = %s and editor = %s;"
-        curs.execute(sql_string,article_item)
-        conn.commit()
+        curs.execute(double_check_sql,article_item)
+        results = curs.fetchall()
         curs = None
-        logger.debug('Article %s was removed from DB' % \
-            article_item[0])
-        continue
+        if 0 < len(results):
+            #Hrm... Article no longer has my CSD template on it
+            # and I've nominated it. Remove it from the DB
+            logger.info('Article %s no longer has my csd template on it' % \
+                article.title())
+            curs = conn.cursor()
+            sql_string = "DELETE from g13_records" + \
+                " WHERE article = %s and editor = %s;"
+            curs.execute(sql_string,article_item)
+            conn.commit()
+            curs = None
+            logger.debug('Article %s was removed from DB' % \
+                article_item[0])
+            continue
   conn.close()
   logger.info('DB Maintenance completed')
 
