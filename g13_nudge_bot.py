@@ -173,6 +173,13 @@ class CategoryListifyRobot:
             listOfArticles += self.cat.subcategoriesList()
         listString = ""
         page_match = re.compile('Wikipedia talk:Articles for creation/')
+        ip_regexp = re.compile(r'^(?:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
+                               r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|'
+                               r'(((?=(?=(.*?(::)))\3(?!.+\4)))\4?|[\dA-F]{1,4}:)'
+                               r'([\dA-F]{1,4}(\4|:\b)|\2){5}'
+                               r'(([\dA-F]{1,4}(\4|:\b|$)|\2){2}|'
+                               r'(((2[0-4]|1\d|[1-9])?\d|25[0-5])\.?\b){4}))\Z',
+                               re.IGNORECASE)
         six_months_ago = ( \
           datetime.datetime.now() - datetime.timedelta(days=(180)) \
         ).timetuple()
@@ -234,7 +241,12 @@ class CategoryListifyRobot:
                   "appropriate for articlespace.\n" + \
                   "If your submission is not edited soon, it could be " + \
                   "nominated for deletion.  If you would like to attempt " + \
-                  "to save it, you will need to improve it.\nIf the " + \
+                  "to save it, you will need to improve it.\n"
+                if ip_regexp.match(creator) is None:
+                  notice = notice + "You may request " + \
+                    "[[WP:USERFY|Userfication]] of the content if it " + \
+                    "meets requirements.\n"
+                notice = notice + "If the " + \
                   "deletion has already occured, instructions on how you " + \
                   "may be able to retrieve it are available at " + \
                   "[[WP:REFUND/G13]].\n" + \
