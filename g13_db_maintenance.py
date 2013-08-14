@@ -22,6 +22,7 @@ __version__ = '$Id$'
 #
 
 import os, re, pickle, bz2, time, datetime, logging
+import sys
 import wikipedia as pywikibot
 from pywikibot import i18n
 #DB CONFIG
@@ -35,11 +36,14 @@ def g13_db_maintenance():
   global logger
   logger.debug('Opened DB conn')
   cur = conn.cursor()
+  moder = int(sys.argv[1])
   cur.execute( \
     "SELECT article, editor" + \
     " from g13_records " + \
     " where notified is not null " + \
-    " ORDER BY notified"
+    "  and MOD(id,5) = %s" + \
+    " ORDER BY notified " +\
+    "", (moder)
   )
   results = cur.fetchall()
   cur = None
