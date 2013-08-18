@@ -189,6 +189,11 @@ class CategoryListifyRobot:
         for article in listOfArticles:
             if None != page_match.match(article.title()):
               pywikibot.output(article.title())
+              if not article.exists():
+                pywikibot.output( \
+                  "SHIT! %s got deleted under us" % article.title() \
+                )
+                continue
               edit_time = time.strptime( \
                 article.getLatestEditors()[0]['timestamp'],
                 "%Y-%m-%dT%H:%M:%SZ"
@@ -477,13 +482,14 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
     trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nudge', \
         when='D', \
-        interval = 1, \
+        interval = 3, \
         backupCount = 90, \
     )
     trfh.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     trfh.setFormatter(formatter)
     logger.addHandler(trfh)
+    trfh.doRollover()
     try:
         main()
     finally:
