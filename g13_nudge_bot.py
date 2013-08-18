@@ -200,6 +200,28 @@ class CategoryListifyRobot:
               )
               potential_article = True
               creator = article.getCreator()[0]
+              try:
+                article.getOldVersion(article.getVersionHistory()[-1][0])
+              except pywikibot.exceptions.IsRedirectPage:
+                msg = "Page: %s was created as a redirect" % article.title()
+                logger.info(msg)
+                hasteur_talk_page = pywikibot.Page(
+                  self.site,
+                  'User talk:Hasteur'
+                )
+                summary = "HB Oddity"
+                notice ="Oddity with %s \n\n" % article.title()
+                add_text(
+                 page = hasteur_talk_page,
+                 addText = notice,
+                 always = True,
+                 summary = summary,
+                 up = False
+                 create = False,
+                 reorderEnabled = False,
+                )
+                continue
+
               if edit_time < six_months_ago:
                 #Notify Creator
                 #Check for already nagged
