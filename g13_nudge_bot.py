@@ -262,7 +262,7 @@ class CategoryListifyRobot:
                   "Hi there, I'm [[User:HasteurBot|HasteurBot]]. I "+ \
                   "just wanted to let you know " + \
                   "that [[%s]]," %(article.title()) +\
-                  " a page you created has not been edited in at least 180" + \
+                  " a page you created, has not been edited in at least 180" + \
                   " days.  The Articles for Creation space is not an" + \
                   " indefinite storage location for content that is not " + \
                   "appropriate for articlespace.\n" + \
