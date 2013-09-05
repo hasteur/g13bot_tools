@@ -23,6 +23,7 @@ __version__ = '$Id$'
 #
 
 import os, re, pickle, bz2, time, datetime, sys, logging
+from dateutil.relativedelta import relativedelta
 import wikipedia as pywikibot
 import catlib, config, pagegenerators
 from pywikibot import i18n
@@ -180,8 +181,8 @@ class CategoryListifyRobot:
                                r'(([\dA-F]{1,4}(\4|:\b|$)|\2){2}|'
                                r'(((2[0-4]|1\d|[1-9])?\d|25[0-5])\.?\b){4}))\Z',
                                re.IGNORECASE)
-        six_months_ago = ( \
-          datetime.datetime.now() - datetime.timedelta(days=(180)) \
+        six_months_ago = ( 
+          datetime.datetime.now() + relativedelta(months=-6) 
         ).timetuple()
         logger.debug('Opened DB conn')
         #Take this out once the full authorization has been given for this bot

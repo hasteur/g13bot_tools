@@ -22,6 +22,7 @@ __version__ = '$Id$'
 #
 
 import os, re, pickle, bz2, time, datetime, logging
+from dateutil.relativedelta import relativedelta
 import wikipedia as pywikibot
 import catlib, config, pagegenerators
 from pywikibot import i18n
@@ -173,11 +174,14 @@ class CategoryListifyRobot:
         csd_cat_size = len(csd_cat.articlesList())
         max_noms_csd_cat = 50 - csd_cat_size
         logger.debug("Max Nominations from cat: %i" % max_noms_csd_cat)
-        thirty_days_ago = ( datetime.datetime.now() - \
+        thirty_days_ago = ( 
+          datetime.datetime.now() - \
           datetime.timedelta(days=30)
         )
         bot_recheck_date = (
-            datetime.datetime.now() - datetime.timedelta(days=(180+30))
+            datetime.datetime.now() +
+            relativedelta(months=-6) +
+            relativedelta(days=-30)
         ).timetuple()
         notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:%S')
         logger.debug("Notification Date: %s" % notification_date)
@@ -186,7 +190,7 @@ class CategoryListifyRobot:
           " from g13_records " + \
           " where notified <= %s " + \
           "   and nominated = '0000-00-00 00:00:00' " + \
-	  " ORDER BY notified,id " + \
+          " ORDER BY id " + \
           " LIMIT %i" % max_noms_csd_cat
         cur.execute( sql_string, \
             (notification_date)
