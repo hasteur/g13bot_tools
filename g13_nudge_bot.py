@@ -235,21 +235,21 @@ class CategoryListifyRobot:
                   "Hi there, I'm [[User:HasteurBot|HasteurBot]]. I "+ \
                   "just wanted to let you know " + \
                   "that [[%s]]," %(article.title()) +\
-                  " a page you created has not been edited in at least 180" + \
+                  " a page you created, has not been edited in at least 180" +\
                   " days.  The Articles for Creation space is not an" + \
                   " indefinite storage location for content that is not " + \
-                  "appropriate for articlespace.\n" + \
+                  "appropriate for articlespace.\n\n" + \
                   "If your submission is not edited soon, it could be " + \
                   "nominated for deletion.  If you would like to attempt " + \
-                  "to save it, you will need to improve it.\n"
+                  "to save it, you will need to improve it.\n\n"
                 if ip_regexp.match(creator) is None:
                   notice = notice + "You may request " + \
                     "[[WP:USERFY|Userfication]] of the content if it " + \
-                    "meets requirements.\n"
+                    "meets requirements.\n\n"
                 notice = notice + "If the " + \
                   "deletion has already occured, instructions on how you " + \
                   "may be able to retrieve it are available at " + \
-                  "[[WP:REFUND/G13]].\n" + \
+                  "[[WP:REFUND/G13]].\n\n" + \
                   "Thank you for your attention. ~~~~"
                 add_text( \
                   page = user_talk_page, \
@@ -270,7 +270,19 @@ class CategoryListifyRobot:
                 cur = None
                 #Take this out when finished
         if False == potential_article:
-            msg = "%s no longer has potential nominations" % self.catTitle
+            log_page = pywikibot.Page(
+                self.site,
+                'User:HasteurBot/Notices'
+            )
+            msg = "%s no longer has potential nominations\n\n" % self.catTitle
+            add_text(page = log_page,
+                addText=msg,
+                always=True,
+                summary="Date empty",
+                up=False,
+                create=True,
+                reorderEnabled=False
+            )
             logger.critical(msg)
         conn.close()
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
@@ -477,13 +489,14 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
     trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nudge', \
         when='D', \
-        interval = 1, \
+        interval = 3, \
         backupCount = 90, \
     )
     trfh.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     trfh.setFormatter(formatter)
     logger.addHandler(trfh)
+    trfh.doRollover()
     try:
         main()
     finally:

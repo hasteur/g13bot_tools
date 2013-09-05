@@ -186,6 +186,7 @@ class CategoryListifyRobot:
           " from g13_records " + \
           " where notified <= %s " + \
           "   and nominated = '0000-00-00 00:00:00' " + \
+	  " ORDER BY notified,id " + \
           " LIMIT %i" % max_noms_csd_cat
         cur.execute( sql_string, \
             (notification_date)
