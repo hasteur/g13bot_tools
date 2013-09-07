@@ -249,8 +249,9 @@ class CategoryListifyRobot:
                 logger.info("Submission %s is now a redirect" % article_item[0])
                 continue
             #Re-check date on article for edits (to be extra sure)
+            edit_time_api = article.getLatestEditors()[0]['timestamp']
             edit_time = time.strptime( \
-                article.getLatestEditors()[0]['timestamp'],
+                edit_time_api,
                 "%Y-%m-%dT%H:%M:%SZ"
             )
             if edit_time > bot_recheck_date:
@@ -267,7 +268,7 @@ class CategoryListifyRobot:
 
             add_text( \
               page = article, \
-              addText = '{{db-g13}}', \
+              addText = '{{db-g13|ts=%s}}' % edit_time_api , 
               summary = '[[User:HasteurBot]]:Nominating for [[WP:G13|CSD:G13]]', \
               always = True, \
               up = True
