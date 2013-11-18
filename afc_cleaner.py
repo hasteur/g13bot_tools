@@ -1,6 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
+Some content in this script is covered under a Creative commons Attribution-ShareAlike 3.0 licence
+Regexes were adapted from Wikipedia AFC Helper project
+ *Submissions.js [1]
+ *core.js [2]
+
+[1] https://github.com/WPAFC/afch/blob/416c434b8d3db62339c5ed3e70a734da7aa1015a/src/submissions.js
+[2] https://github.com/WPAFC/afch/blob/ef82979c391274dda0e0de795476fc1cf5d01157/src/core.js
+
 Scripts to run the clean logic on AFC pending submissions.
 
 Syntax: python afc_cleaner.py [-from:UNDERSCORED_CATEGORY]
