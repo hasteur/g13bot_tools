@@ -10,7 +10,7 @@ Regexes were adapted from Wikipedia AFC Helper project
 [2] https://github.com/WPAFC/afch/blob/ef82979c391274dda0e0de795476fc1cf5d01157/src/core.js
 
 Scripts to run the clean logic on AFC pending submissions.
-
+Up to Line 1219 of the submissions.js logic is implemented
 Syntax: python afc_cleaner.py [-from:UNDERSCORED_CATEGORY]
 """
 
@@ -195,25 +195,45 @@ def clean_submission(page):
     page_text = remove_bolding_in_headlines(page_text)
     page_text = disable_categories(page_text)
     page_text = line_1188_replacements(page_text)
+    page_text = line_1200_replacements(page_text)
+    page_text = relocate_stubs(page_text)
     print '-'*20
     print page_text
 
+def relocate_stubs(page_text):
+    global logger
+    stub_list = re.findall('\{\{\s*-*[Ss]tub\}\}',page_text)
+    if len(stub_list) == 0:
+        return page_text
+    else:
+        print "Relocating at least 1 stub"
+    imp_text = re.sub('\{\{\s*-*[Ss]tub\}\}','',page_text)
+    for stub_item in stub_list:
+        imp_text += "\n"+stub_item
+    return imp_text
+
 def line_1188_replacements(page_text):
     global logger
-    imp_text = re.sub('\<\!--Please don't change anything and press save --\>','',page_text)
-    imp_text = re.sub('\<\!-- Just press the \"Save page\" button below without changing anything! Doing so will submit your article submission for review. Once you have saved this page you will find a new yellow 'Review waiting' box at the bottom of your submission page. If you have submitted your page previously, the old pink 'Submission declined' template or the old grey 'Draft' template will still appear at the top of your submission page, but you should ignore them. Again, please don't change anything in this text box. Just press the \"Save page\" button below. --\>','',imp_text)
+    imp_text = re.sub('\<\!--Please don\'t change anything and press save --\>','',page_text)
+    imp_text = re.sub('\<\!-- Just press the \"Save page\" button below without changing anything! Doing so will submit your article submission for review. Once you have saved this page you will find a new yellow \'Review waiting\' box at the bottom of your submission page. If you have submitted your page previously, the old pink \'Submission declined\' template or the old grey \'Draft\' template will still appear at the top of your submission page, but you should ignore them. Again, please don\'t change anything in this text box. Just press the \"Save page\" button below. --\>','',imp_text)
     imp_text = re.sub('== Request review at \[\[WP:AFC\]\] ==\n','',imp_text)
     imp_text = re.sub('(?:<\s*references\s*>([\S\s]*)<\/references>|<\s*references\s*\/\s*>)','{{reflist|refs=\g<1>',imp_text)
     imp_text = re.sub('{{reflist|refs=}}','{{reflist}}',imp_text)
     imp_text = re.sub('\{\{(userspacedraft|userspace draft|user sandbox|Please leave this line alone \(sandbox heading\))(?:\{\{[^{}]*\}\}|[^}{])*\}\}','',imp_text)
     imp_text = re.sub('<!--\s*-->','',imp_text)
     imp_text = re.sub('^----+$','',imp_text)
-    imp_text = re.sub('\[\[:?Category:AfC(_|\s*)+submissions(_|\s*)+with(_|\s*)+missing(_|\s*)+AfC(_|\s*)+template\]\]','',imp_text)
     if imp_text != page_text:
         print "Line 1188 replacements triggered"
         return imp_text
     return page_text
 
+def line_1200_replacements(page_text):
+    global logger
+    imp_text = re.sub('\<\/ref\>\s*,*\<ref','</ref><ref',page_text)
+    if imp_text != page_text:
+        print "Line 1200 replacements triggered"
+        return imp_text
+    return page_text
 def remove_bolding_in_headlines(page_text):
     global logger
     #Line 1178 test
@@ -261,163 +281,17 @@ def internal_rewrite(matchobj):
     if displayname != '':
         replacetext = '[[%s|%s]]' % (pagename,displayname)
         return replacetext
-    return '[[%s]]' % pagename
+    return pagename
+
 def uncomment_categories(page_text):
     global logger
     #Line 1067 test
     imp_text = re.sub('\<!--\s*((\[\[:{0,1}(Category:.*?)\]\]\s*)+)--\>',
         '\g<2>',page_text)
     if imp_text != page_text:
-        print "Categories uncommented"
-        return imp_text
+       print "Categories uncommented"
+       return imp_text
     return page_text
-def add_text(page=None, addText=None, summary=None, regexSkip=None,
-             regexSkipUrl=None, always=False, up=False, putText=True,
-             oldTextGiven=None, reorderEnabled=True, create=False):
-    global logger
-    # When a page is tagged as "really well written" it has a star in the
-    # interwiki links. This is a list of all the templates used (in regex
-    # format) to make the stars appear.
-    starsList = [
-        u'bueno',
-        u'bom interwiki',
-        u'cyswllt[ _]erthygl[ _]ddethol', u'dolen[ _]ed',
-        u'destacado', u'destaca[tu]',
-        u'enllaç[ _]ad',
-        u'enllaz[ _]ad',
-        u'leam[ _]vdc',
-        u'legătură[ _]a[bcf]',
-        u'liamm[ _]pub',
-        u'lien[ _]adq',
-        u'lien[ _]ba',
-        u'liên[ _]kết[ _]bài[ _]chất[ _]lượng[ _]tốt',
-        u'liên[ _]kết[ _]chọn[ _]lọc',
-        u'ligam[ _]adq',
-        u'ligoelstara',
-        u'ligoleginda',
-        u'link[ _][afgu]a', u'link[ _]adq', u'link[ _]f[lm]', u'link[ _]km',
-        u'link[ _]sm', u'linkfa',
-        u'na[ _]lotura',
-        u'nasc[ _]ar',
-        u'tengill[ _][úg]g',
-        u'ua',
-        u'yüm yg',
-        u'רא',
-        u'وصلة مقالة جيدة',
-        u'وصلة مقالة مختارة',
-    ]
-
-    errorCount = 0
-    site = pywikibot.getSite()
-    pathWiki = site.family.nicepath(site.lang)
-    site = pywikibot.getSite()
-    if oldTextGiven is None:
-        try:
-            text = page.get()
-        except pywikibot.NoPage:
-            if create:
-                pywikibot.output(u"%s doesn't exist, creating it!"
-                                 % page.title())
-                text = u''
-            else:
-                pywikibot.output(u"%s doesn't exist, skip!" % page.title())
-                return (False, False, always)
-        except pywikibot.IsRedirectPage:
-            pywikibot.output(u"%s is a redirect, skip!" % page.title())
-            return (False, False, always)
-    else:
-        text = oldTextGiven
-    # If not up, text put below
-    if not up:
-        newtext = text
-        # Translating the \\n into binary \n
-        addText = addText.replace('\\n', '\n')
-        if (reorderEnabled):
-            # Getting the categories
-            categoriesInside = pywikibot.getCategoryLinks(newtext, site)
-            # Deleting the categories
-            newtext = pywikibot.removeCategoryLinks(newtext, site)
-            # Getting the interwiki
-            interwikiInside = pywikibot.getLanguageLinks(newtext, site)
-            # Removing the interwiki
-            newtext = pywikibot.removeLanguageLinks(newtext, site)
-
-            # Adding the text
-            newtext += u"\n%s" % addText
-            # Reputting the categories
-            newtext = pywikibot.replaceCategoryLinks(newtext,
-                                                     categoriesInside, site,
-                                                     True)
-            # Dealing the stars' issue
-            allstars = []
-            starstext = pywikibot.removeDisabledParts(text)
-            for star in starsList:
-                regex = re.compile('(\{\{(?:template:|)%s\|.*?\}\}[\s]*)'
-                                   % star, re.I)
-                found = regex.findall(starstext)
-                if found != []:
-                    newtext = regex.sub('', newtext)
-                    allstars += found
-            if allstars != []:
-                newtext = newtext.strip() + '\r\n\r\n'
-                allstars.sort()
-                for element in allstars:
-                    newtext += '%s\r\n' % element.strip()
-            # Adding the interwiki
-            newtext = pywikibot.replaceLanguageLinks(newtext, interwikiInside,
-                                                     site)
-        else:
-            newtext += u"\n%s" % addText
-    else:
-        newtext = addText + '\n' + text
-    if putText and text != newtext:
-        #pywikibot.output(u"\n\n>>> \03{lightpurple}%s\03{default} <<<"
-        #                 % page.title())
-        #pywikibot.showDiff(text, newtext)
-        logger.debug("Editing: %s" % page.title())
-    # Let's put the changes.
-    while True:
-        # If someone load it as module, maybe it's not so useful to put the
-        # text in the page
-        if putText:
-            if always or choice == 'y':
-                try:
-                    pass
-                    if always:
-                        page.put(newtext, summary,
-                                 minorEdit=page.namespace() != 3)
-                    else:
-                        page.put_async(newtext, summary,
-                                       minorEdit=page.namespace() != 3)
-                except pywikibot.EditConflict:
-                    pywikibot.output(u'Edit conflict! skip!')
-                    return (False, False, always)
-                except pywikibot.ServerError:
-                    errorCount += 1
-                    if errorCount < 5:
-                        pywikibot.output(u'Server Error! Wait..')
-                        time.sleep(5)
-                        continue
-                    else:
-                        raise pywikibot.ServerError(u'Fifth Server Error!')
-                except pywikibot.SpamfilterError, e:
-                    pywikibot.output(
-                        u'Cannot change %s because of blacklist entry %s'
-                        % (page.title(), e.url))
-                    return (False, False, always)
-                except pywikibot.PageNotSaved, error:
-                    pywikibot.output(u'Error putting page: %s' % error.args)
-                    return (False, False, always)
-                except pywikibot.LockedPage:
-                    pywikibot.output(u'Skipping %s (locked page)'
-                                     % page.title())
-                    return (False, False, always)
-                else:
-                    # Break only if the errors are one after the other...
-                    errorCount = 0
-                    return (True, True, always)
-        else:
-            return (text, newtext, always)
 
 def main(*args):
     global catDB
