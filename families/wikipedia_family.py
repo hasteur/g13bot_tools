@@ -1003,6 +1003,13 @@ class Family(family.WikimediaFamily):
             'bar': u'Nochricht Dischkrian',
         }
 
+        self.namespaces[118] = {
+            'en': u'Draft',
+        }
+        self.namespaces[119] = {
+            'en': u'Draft talk',
+        }
+
         self.namespaces[446] = {
             'en': u'Education Program',
             'he': u'הוראה',
