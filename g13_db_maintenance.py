@@ -40,9 +40,10 @@ def g13_db_maintenance():
   cur.execute( \
     "SELECT article, editor" + \
     " from g13_records " + \
-    " where notified is not null " + \
-    "  and MOD(id,5) = %s" + \
-    " ORDER BY notified " +\
+    " where " + \
+    "  nominated > '0000-00-00 00:00:00' and" + \
+    "  MOD(id,5) = %s" + \
+    " ORDER BY id " +\
     "", (moder)
   )
   results = cur.fetchall()
