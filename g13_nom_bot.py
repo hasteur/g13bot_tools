@@ -165,14 +165,17 @@ class CategoryListifyRobot:
         self.talkPages = talkPages
         self.recurse = recurse
 
-    def run(self):
+    def run(self, passnum=0):
         global logger
+        print 'Pass %s' % str(passnum)
         change_counter = 0
         csd_cat = catlib.Category(self.site, \
           'Category:Candidates for speedy deletion as abandoned AfC submissions' \
         )
         csd_cat_size = len(csd_cat.articlesList())
         max_noms_csd_cat = 50 - csd_cat_size
+        if passnum == 5:
+            return
         logger.debug("Max Nominations from cat: %i" % max_noms_csd_cat)
         thirty_days_ago = ( 
           datetime.datetime.now() - \
@@ -199,23 +202,6 @@ class CategoryListifyRobot:
         logger.debug("Results Fetched: %i" % len(results))
         cur = None
         for article_item in results:
-            if change_counter == max_noms_csd_cat:
-              cat_limit_string = u"\n\n\03{lightred}***%s***\03{default}" \
-                % "Hit max CSD category nominations limit"
-              pywikibot.output(cat_limit_string)
-              hasteur_talk = pywikibot.Page(
-                self.site,
-                'User talk:Hasteur'
-              )
-              summary = "[[User:HasteurBot]]: G13 category is '''full'''"
-              add_text( \
-                page = hasteur_talk, \
-                addText = '\nG13 Category membership exceeded ~~~~\n', \
-                summary = summary, \
-                always = True, \
-                up = False \
-              )
-              break
             article = None
             try:
                 article = pywikibot.Page(
@@ -237,8 +223,8 @@ class CategoryListifyRobot:
                 logger.info("Submission %s doesn't exisist." % article_item[0])
                 continue
             if True == article.isRedirectPage():
-                #Submission is now a redirect.  Happy Day, it got promoted to
-                # article space!
+                #Submission is now a redirect.  It's been moved somewhere which
+                # invalidates the clock on G13
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
                     " WHERE article = %s " + \
@@ -302,6 +288,7 @@ class CategoryListifyRobot:
             )
             logger.info("Notified %s for %s" % (creator, article_item[0]))
             change_counter = change_counter + 1
+        self.run(passnum+1)
 def add_text(page=None, addText=None, summary=None, regexSkip=None,
              regexSkipUrl=None, always=False, up=False, putText=True,
              oldTextGiven=None, reorderEnabled=True, create=False):
