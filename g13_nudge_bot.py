@@ -174,6 +174,7 @@ class CategoryListifyRobot:
             listOfArticles += self.cat.subcategoriesList()
         listString = ""
         page_match = re.compile('Wikipedia talk:Articles for creation/')
+        page_match2 = re.compile('Draft/')
         ip_regexp = re.compile(r'^(?:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
                                r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|'
                                r'(((?=(?=(.*?(::)))\3(?!.+\4)))\4?|[\dA-F]{1,4}:)'
@@ -188,7 +189,8 @@ class CategoryListifyRobot:
         #Take this out once the full authorization has been given for this bot
         potential_article = False
         for article in listOfArticles:
-            if None != page_match.match(article.title()):
+            if None != page_match.match(article.title()) or
+               None != page_match2.match(article.title()) :
               pywikibot.output(article.title())
               edit_time = time.strptime( \
                 article.getLatestEditors()[0]['timestamp'],
@@ -236,8 +238,8 @@ class CategoryListifyRobot:
                   "Hi there, I'm [[User:HasteurBot|HasteurBot]]. I "+ \
                   "just wanted to let you know " + \
                   "that [[%s]]," %(article.title()) +\
-                  " a page you created, has not been edited in at least 180" +\
-                  " days.  The Articles for Creation space is not an" + \
+                  " a page you created, has not been edited in 6 months" +\
+                  ".  The Articles for Creation space is not an" + \
                   " indefinite storage location for content that is not " + \
                   "appropriate for articlespace.\n\n" + \
                   "If your submission is not edited soon, it could be " + \
