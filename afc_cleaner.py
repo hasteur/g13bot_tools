@@ -197,8 +197,24 @@ def clean_submission(page):
     page_text = line_1188_replacements(page_text)
     page_text = line_1200_replacements(page_text)
     page_text = relocate_stubs(page_text)
+    page_text = adjust_afc_comments(page_text)
+    page_text = adjust_submissions(page_text)
     print '-'*20
     print page_text
+
+def adjust_submissions(page_text):
+    global logger
+    imp_text = page_text
+    submissions_list = re.findall('\{\{\s*afc submission\s*\|\s*(?:[t|r|d]?)\|(?:[\s\w\|=]*)\|\s*ts\s*=\s*(?:[0-9]{14}|\{\{REVISIONTIMESTAMP\}\})(?:[\s\w\|=]*)\}\}',page_text,re.I)
+    if len(submissions_list) >= 0:
+        print "Adjusting at least 1 stubmission"
+        for sub_item in submissions_list:
+            print sub_item
+    return imp_text
+    
+def adjust_afc_comments(page_text):
+    imp_text = page_text
+    return imp_text
 
 def relocate_stubs(page_text):
     global logger
