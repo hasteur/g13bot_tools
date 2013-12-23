@@ -198,11 +198,11 @@ def clean_submission(page):
     page_text = line_1200_replacements(page_text)
     page_text = relocate_stubs(page_text)
     page_text = adjust_afc_comments(page_text)
-    page_text = adjust_submissions(page_text)
+    page_text = adjust_submissions(page_text,page._namespace)
     print '-'*20
     print page_text
 
-def adjust_submissions(page_text):
+def adjust_submissions(page_text,namespace):
     global logger
     imp_text = page_text
     submissions_list = re.findall('\{\{\s*afc submission\s*\|\s*(?:[t|r|d]?)\|(?:[\s\w\|=]*)\|\s*ts\s*=\s*(?:[0-9]{14}|\{\{REVISIONTIMESTAMP\}\})(?:[\s\w\|=]*)\}\}',page_text,re.I)
@@ -210,6 +210,12 @@ def adjust_submissions(page_text):
         print "Adjusting at least 1 stubmission"
         for sub_item in submissions_list:
             print sub_item
+            #Strip the template out, it's for a good purpose
+            imp_text = imp_text.replace(sub_item,'')
+            #Adjust some parameters that are troublesome.
+            sub_item = sub_item.replace('\{\{REVISIONTIMESTAMP\}\}','99999999999998')
+            sub_item = re.sub('\|\s*small\s*=\s*yes\*','',sub_item)
+            sub_item = re.sub('\s*\|\s*ns\s*=[0-9]{0,3}\s*','\|ns='+str(namespace),sub_item)
     return imp_text
     
 def adjust_afc_comments(page_text):
