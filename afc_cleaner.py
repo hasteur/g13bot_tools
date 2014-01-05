@@ -199,27 +199,66 @@ def clean_submission(page):
     page_text = relocate_stubs(page_text)
     page_text = adjust_afc_comments(page_text)
     page_text = adjust_submissions(page_text,page._namespace)
+    page.put(newtext = page_text,
+        comment = '[[Wikipedia:Bots/Requests for approval/HasteurBot 6|HasteurBot]]: Cleaning AfC submission'
+        )
     print '-'*20
-    print page_text
 
 def adjust_submissions(page_text,namespace):
     global logger
     imp_text = page_text
     submissions_list = re.findall('\{\{\s*afc submission\s*\|\s*(?:[t|r|d]?)\|(?:[\s\w\|=]*)\|\s*ts\s*=\s*(?:[0-9]{14}|\{\{REVISIONTIMESTAMP\}\})(?:[\s\w\|=]*)\}\}',page_text,re.I)
-    if len(submissions_list) >= 0:
+    sub_list = []
+    if len(submissions_list) > 0:
         print "Adjusting at least 1 stubmission"
         for sub_item in submissions_list:
-            print sub_item
             #Strip the template out, it's for a good purpose
             imp_text = imp_text.replace(sub_item,'')
             #Adjust some parameters that are troublesome.
-            sub_item = sub_item.replace('\{\{REVISIONTIMESTAMP\}\}','99999999999998')
-            sub_item = re.sub('\|\s*small\s*=\s*yes\*','',sub_item)
-            sub_item = re.sub('\s*\|\s*ns\s*=[0-9]{0,3}\s*','\|ns='+str(namespace),sub_item)
+            sub_item = sub_item.replace('{{REVISIONTIMESTAMP}}','99999999999998')
+            sub_item = re.sub('\|\s*small\s*=\s*yes\s*','|',sub_item)
+            sub_item = re.sub('\s*\|\s*ns\s*=[0-9]{0,3}\s*','|ns='+str(namespace),sub_item)
+            match_sub = re.search(r"(?P<template>[\w+\s+]+)\|(?P<status>\w?)\|[\w|\s\|]+ts=(?P<timestamp>[0-9]{14})",sub_item)
+            sub_timestamp = match_sub.group('timestamp')
+            sub_status = match_sub.group('status')
+            sub_dict = {
+                "template" : sub_item,
+                "time": sub_timestamp,
+                "status": sub_status
+            }
+            sub_list.extend( [ sub_dict])
+    sort1 = sorted(sub_list, key=lambda template: template["time"], reverse = True)
+    sort2 = sorted(sort1, key=lambda template: template["status"])
+    no_draft = True
+    has_pending = False
+    template_string = ''
+    for template in sort2:
+        if template['status'] == '' and has_pending == False:
+            template_string = template_string + template['template']
+            no_draft = False
+            has_pending = True
+        elif template['status'] == 't' and no_draft == True:
+            template_string = template_string + template['template']
+            no_draft = False
+        elif template['status'] not in ('', 't'):
+            template_string = template_string + template['template']
+            no_draft = False
+    imp_text = template_string + '\n' + imp_text
+    imp_text = imp_text.replace('99999999999998','{{subst:REVISIONTIMESTAMP}}')
     return imp_text
     
 def adjust_afc_comments(page_text):
     imp_text = page_text
+    comment_list = re.findall('\{\{\s*afc comment\s*\|1\=[\s|\S]*?\}\}',page_text)
+    comment_fix = []
+    if len(comment_list) >0:
+        print "Adjusting at least 1 AFC comment"
+        for comment_item in comment_list:
+            imp_text = imp_text.replace(comment_item, '')
+    comment_string = ''
+    for comment in comment_list:
+        comment_string = comment_string + comment
+    imp_text = comment_string + '\n' + imp_text
     return imp_text
 
 def relocate_stubs(page_text):
@@ -238,9 +277,9 @@ def line_1188_replacements(page_text):
     global logger
     imp_text = re.sub('\<\!--Please don\'t change anything and press save --\>','',page_text)
     imp_text = re.sub('\<\!-- Just press the \"Save page\" button below without changing anything! Doing so will submit your article submission for review. Once you have saved this page you will find a new yellow \'Review waiting\' box at the bottom of your submission page. If you have submitted your page previously, the old pink \'Submission declined\' template or the old grey \'Draft\' template will still appear at the top of your submission page, but you should ignore them. Again, please don\'t change anything in this text box. Just press the \"Save page\" button below. --\>','',imp_text)
-    imp_text = re.sub('== Request review at \[\[WP:AFC\]\] ==\n','',imp_text)
-    imp_text = re.sub('(?:<\s*references\s*>([\S\s]*)<\/references>|<\s*references\s*\/\s*>)','{{reflist|refs=\g<1>',imp_text)
-    imp_text = re.sub('{{reflist|refs=}}','{{reflist}}',imp_text)
+    imp_text = re.sub('== Request review at \[\[WP:AFC\]\] ==\n?','',imp_text)
+    #imp_text = re.sub('(?:<\s*references\s*>([\S\s]*)<\/references>|<\s*references\s*\/\s*>)','{{reflist|refs=\g<1>',imp_text)
+    #imp_text = re.sub('{{reflist|refs=}}','{{reflist}}',imp_text)
     imp_text = re.sub('\{\{(userspacedraft|userspace draft|user sandbox|Please leave this line alone \(sandbox heading\))(?:\{\{[^{}]*\}\}|[^}{])*\}\}','',imp_text)
     imp_text = re.sub('<!--\s*-->','',imp_text)
     imp_text = re.sub('^----+$','',imp_text)
@@ -259,8 +298,7 @@ def line_1200_replacements(page_text):
 def remove_bolding_in_headlines(page_text):
     global logger
     #Line 1178 test
-    imp_text = re.sub('[\s\n]*(={2,})\s*(?:\s*<big>|\s*\'\'\')*\s*(.*?)\s*(?:\s*<\/big>|\s*\'\'\')*\s*?(={2,})[\n\s]*',
-        "\n\n \g<1> \g<2> \g<1>", page_text)
+    imp_text = re.sub('[\s\n]*(={2,})\s*(?:\s*<big>|\s*\'\'\')*\s*(.*?)\s*(?:\s*<\/big>|\s*\'\'\')*\s*?(={2,})[\n\s]*',"\n\g<1> \g<2> \g<1>", page_text)
     if imp_text != page_text:
         print "Removed some bolding"
         return imp_text
