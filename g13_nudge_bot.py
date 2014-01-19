@@ -189,7 +189,7 @@ class CategoryListifyRobot:
         #Take this out once the full authorization has been given for this bot
         potential_article = False
         for article in listOfArticles:
-            if None != page_match.match(article.title()) or
+            if None != page_match.match(article.title()) or \
                None != page_match2.match(article.title()) :
               pywikibot.output(article.title())
               edit_time = time.strptime( \
