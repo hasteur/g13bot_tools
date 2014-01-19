@@ -200,7 +200,7 @@ def clean_submission(page):
     page_text = adjust_afc_comments(page_text)
     page_text = adjust_submissions(page_text,page._namespace)
     page.put(newtext = page_text,
-        comment = '[[Wikipedia:Bots/Requests for approval/HasteurBot 6|HasteurBot]]: Cleaning AfC submission'
+        comment = '[[Wikipedia:Bots/Requests for approval/HasteurBot 6|HasteurBot Task 6]]: Cleaning AfC submission'
         )
     print '-'*20
 
