@@ -174,7 +174,9 @@ class CategoryListifyRobot:
         )
         csd_cat_size = len(csd_cat.articlesList())
         max_noms_csd_cat = 50 - csd_cat_size
-        if passnum == 5:
+        if max_noms_csd_cat == 0:
+            return
+        if passnum == 10:
             return
         logger.debug("Max Nominations from cat: %i" % max_noms_csd_cat)
         thirty_days_ago = ( 
