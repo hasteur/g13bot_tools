@@ -100,11 +100,17 @@ class TemplateCountRobot:
         match = False
         #Check Matching Cases
         match_list = [
-            '{{Biology',
-            '{{WPBIOLOGY',
-            '{{WP Biology',
-            '{{WikiProject Entomology',
-            '{{WikiProject Biology',
+            '{{WikiProject Biography',
+            '{{WPBIO',
+            '{{WP Biography',
+            '{{WPbiography',
+            '{{Wikiproject Biography',
+            '{{WP Bio',
+            '{{Bio',
+            '{{WPBiography',
+            '{{WikiProject Biographies',
+            '{{WikiProject biography',
+            '{{Wpbio',
             '{{Companies',
             '{{WPCO',
             '{{WP Companies',
@@ -130,7 +136,9 @@ class TemplateCountRobot:
         ]
         for key in match_list:
             if key in page_text:
-                match = True;
+                match = True
+        if 'CHARITY' in page.title().upper():
+            match = True
         #Check Exclusions
         if match == False:
             return
