@@ -81,15 +81,20 @@ class TemplateCountRobot:
         templateDict = TemplateCountRobot.template_dict(templates, namespaces)
         pywikibot.output(u'\nList of pages transcluding templates:',
                          toStdout=True)
+        
         for key in templates:
             pywikibot.output(u'* %s' % key)
         pywikibot.output(u'-' * 36, toStdout=True)
         total = 0
+        affected_pages = []
         for key in templateDict:
             for page in templateDict[key]:
-                TemplateCountRobot.evaluate_qualified(page);
+                return_eval = TemplateCountRobot.evaluate_qualified(page)
+                if return_eval != '':
+                    affected_pages.append(return_eval)
                 #pywikibot.output(page.title(), toStdout=True)
                 total += 1
+        pywikibot.output(affected_pages)
         pywikibot.output(u'Total page count: %d' % total)
         pywikibot.output(u'Report generated on %s'
                          % datetime.datetime.utcnow().isoformat(),
@@ -101,16 +106,16 @@ class TemplateCountRobot:
         #Check Matching Cases
         match_list = [
             '{{WikiProject Biography',
-            '{{WPBIO',
+            '{{WPBIO|',
             '{{WP Biography',
             '{{WPbiography',
             '{{Wikiproject Biography',
-            '{{WP Bio',
-            '{{Bio',
+            '{{WP Bio|',
+            '{{Bio|',
             '{{WPBiography',
             '{{WikiProject Biographies',
             '{{WikiProject biography',
-            '{{Wpbio',
+            '{{Wpbio|',
             '{{Companies',
             '{{WPCO',
             '{{WP Companies',
@@ -141,7 +146,7 @@ class TemplateCountRobot:
             match = True
         #Check Exclusions
         if match == False:
-            return
+            return ''
         else:
             #Found a match
             print page.title()
@@ -158,6 +163,9 @@ class TemplateCountRobot:
                 replacement_text = page_text.replace(strip_template,replace_template)
                 comment = "[[Wikipedia:Bots/Requests for approval/HasteurBot 7|HasteurBot 7] Adding Society Task Force Parm"
                 #page.put(replacement_text,comment = comment,maxTries=5)
+                return page.title()
+            else:
+                return ''
 
 
     @staticmethod
