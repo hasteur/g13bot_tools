@@ -145,7 +145,17 @@ class TemplateCountRobot:
         for key in match_list:
             if key in page_text:
                 match = True
-        if 'CHARITY' in page.title().upper():
+        if match == False:
+            if match == False and
+                "{{WikiProjectBannerShell" in page_text and
+                "living=yes" in page_text:
+                match = True
+            if match == False and
+                "{{WikiProjectBannerShell" in page_text and
+                "blp=yes" in page_text:
+                match = True
+        #Handle the case for "Charity" titled pages
+        if match == False and 'CHARITY' in page.title().upper():
             match = True
         #Check Exclusions
         if match == False:
