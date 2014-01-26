@@ -137,7 +137,10 @@ class TemplateCountRobot:
             '{{WPOrganisations',
             '{{WP Organizations',
             '{{WP Organisation',
-            '{{WPORGANIZATIONS'
+            '{{WPORGANIZATIONS',
+            '{{BLP}}',
+            '{{Blpinfo}}',
+            '{{Blp}}',
         ]
         for key in match_list:
             if key in page_text:
