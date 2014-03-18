@@ -286,6 +286,7 @@ class CategoryListifyRobot:
               addText = '{{subst:db-afc-notice|%s}}~~~~\n' % (article.title()), \
               always = True, \
               up = False, \
+              reorderEnabled=False, \
               create = True\
             )
             logger.info("Notified %s for %s" % (creator, article_item[0]))
