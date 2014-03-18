@@ -259,6 +259,7 @@ class CategoryListifyRobot:
               addText = '{{db-g13|ts=%s}}' % edit_time_api , 
               summary = '[[User:HasteurBot]]:Nominating for [[WP:G13|CSD:G13]]', \
               always = True, \
+              reorderEnabled=False, \
               up = True
             )
             logger.info("Nominated: %s" % article_item[0])
