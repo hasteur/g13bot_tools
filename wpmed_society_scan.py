@@ -146,12 +146,12 @@ class TemplateCountRobot:
             if key in page_text:
                 match = True
         if match == False:
-            if match == False and
-                "{{WikiProjectBannerShell" in page_text and
+            if match == False and \
+                "{{WikiProjectBannerShell" in page_text and \
                 "living=yes" in page_text:
                 match = True
-            if match == False and
-                "{{WikiProjectBannerShell" in page_text and
+            if match == False and \
+                "{{WikiProjectBannerShell" in page_text and \
                 "blp=yes" in page_text:
                 match = True
         #Handle the case for "Charity" titled pages
@@ -165,17 +165,17 @@ class TemplateCountRobot:
             print page.title()
             matched_template = ''
             for template in templates:
-                matched_template = re.findall('{{'+template+'\|?.*}}',page_text)
+                matched_template = re.findall('{{'+template+'\|?.*?}}',page_text)
                 if 1 == len(matched_template):
                     #Found the instigating template
                     break
-            if 'society=' not in matched_template:
+            if 'society=' not in matched_template[0]:
                 #Doesn't have the society parm, let's add it
                 strip_template = matched_template[0]
                 replace_template = strip_template[0:-2]+'|society=yes|society-imp=???}}'
                 replacement_text = page_text.replace(strip_template,replace_template)
-                comment = "[[Wikipedia:Bots/Requests for approval/HasteurBot 7|HasteurBot 7] Adding Society Task Force Parm"
-                #page.put(replacement_text,comment = comment,maxTries=5)
+                comment = "[[Wikipedia:Bots/Requests for approval/HasteurBot 7|HasteurBot 7]] Adding Society Task Force Parm"
+                page.put(replacement_text,comment = comment,maxTries=5)
                 return page.title()
             else:
                 return ''
