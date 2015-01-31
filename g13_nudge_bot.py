@@ -166,7 +166,7 @@ class CategoryListifyRobot:
             listOfArticles += self.cat.subcategoriesList()
         listString = ""
         page_match = re.compile('Wikipedia talk:Articles for creation/')
-        page_match2 = re.compile('Draft/')
+        page_match2 = re.compile('Draft:')
         ip_regexp = re.compile(r'^(?:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
                                r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|'
                                r'(((?=(?=(.*?(::)))\3(?!.+\4)))\4?|[\dA-F]{1,4}:)'
@@ -180,6 +180,7 @@ class CategoryListifyRobot:
         logger.debug('Opened DB conn')
         #Take this out once the full authorization has been given for this bot
         potential_article = False
+        interested_insert = "INSERT INTO interested_notify (article,notified) VALUES (%s, %s)"
         for article in listOfArticles:
             if None != page_match.match(article.title()) or \
                None != page_match2.match(article.title()) :
@@ -263,18 +264,9 @@ class CategoryListifyRobot:
                 message = '\n==G13 Eligibility==\n[[%s]] has become eligible for G13. ~~~~' % article.title()
                 while intersection:
                     editor = intersection.pop()
-                    talk_page = pywikibot.Page(
-                        self.site,
-                        'User talk:%s'% editor
-                    )
-                    talk_page_text = talk_page.get() + message
-                    talk_page.put(newtext = talk_page_text,
-                        comment="G13 Eligiblity note to interested editor",
-                        minorEdit=False
-                    )
-
-
-
+                    cur = conn.cursor()
+                    cur.execute(interested_insert, (article.title(),editor)
+                    conn.commit()
                 #Take this out when finished
         if False == potential_article:
             log_page = pywikibot.Page(
