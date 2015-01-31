@@ -47,8 +47,8 @@ def write_notification(list_current,editor_current):
         force=True
     )
     del_cur = conn.cursor()
-    #del_cur.execute("DELETE from interested_notify where notified = %s",(editor_current))
-    #conn.commit()
+    del_cur.execute("DELETE from interested_notify where notified = %s",(editor_current))
+    conn.commit()
     del_cur.close()
 
 interested_notify()
