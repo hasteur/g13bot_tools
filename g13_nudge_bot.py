@@ -175,7 +175,7 @@ class CategoryListifyRobot:
                                r'(((2[0-4]|1\d|[1-9])?\d|25[0-5])\.?\b){4}))\Z',
                                re.IGNORECASE)
         six_months_ago = ( 
-          datetime.datetime.now() + relativedelta(months=-6) 
+          datetime.datetime.now() + relativedelta(months=-5) 
         ).timetuple()
         logger.debug('Opened DB conn')
         #Take this out once the full authorization has been given for this bot
@@ -223,7 +223,7 @@ class CategoryListifyRobot:
                   "Hi there, I'm [[User:HasteurBot|HasteurBot]]. I "+ \
                   "just wanted to let you know " + \
                   "that [[%s]]," %(article.title()) +\
-                  " a page you created, has not been edited in 6 months" +\
+                  " a page you created, has not been edited in 5 months" +\
                   ".  The Articles for Creation space is not an" + \
                   " indefinite storage location for content that is not " + \
                   "appropriate for articlespace.\n\n" + \
@@ -265,7 +265,7 @@ class CategoryListifyRobot:
                 while intersection:
                     editor = intersection.pop()
                     cur = conn.cursor()
-                    cur.execute(interested_insert, (article.title(),editor)
+                    cur.execute(interested_insert, (article.title(),editor))
                     conn.commit()
                 #Take this out when finished
         if False == potential_article:

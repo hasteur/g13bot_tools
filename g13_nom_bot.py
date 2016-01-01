@@ -186,7 +186,6 @@ class CategoryListifyRobot:
         bot_recheck_date = (
             datetime.datetime.now() +
             relativedelta(months=-6) +
-            relativedelta(days=-30)
         ).timetuple()
         notification_date = thirty_days_ago.strftime('%Y-%m-%d %H:%M:%S')
         logger.debug("Notification Date: %s" % notification_date)
@@ -240,7 +239,7 @@ class CategoryListifyRobot:
                 edit_time_api,
                 "%Y-%m-%dT%H:%M:%SZ"
             )
-            if edit_time > bot_recheck_date:
+            if edit_time > thirty_days_ago:
                 #Page has been updated since the nudge, Not valid any more
                 curs = conn.cursor()
                 sql_string = "DELETE from g13_records" + \
@@ -250,6 +249,10 @@ class CategoryListifyRobot:
                 conn.commit()
                 curs = None
                 logger.info("Submission %s has been updated" % article_item[0])
+                continue
+            elif edit_time > bot_recheck_date:
+                #Page isn't quite eligible for G13, move along
+                logger.info("Submission %s isn't ripe yet" % article_item[0])
                 continue
 
             add_text( \
@@ -495,7 +498,7 @@ if __name__ == "__main__":
     # community
     logger = logging.getLogger('g13_nom_bot')
     logger.setLevel(logging.DEBUG)
-    trfh = logging.handlers.TimedRotatingFileHandler('logs/g13_nom', \
+    trfh = logging.handlers.TimedRotatingFileHandler('g13bot_tools/logs/g13_nom', \
         when='D', \
         interval = 1, \
         backupCount = 90, \

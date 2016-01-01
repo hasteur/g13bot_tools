@@ -35,7 +35,7 @@ def write_notification(list_current,editor_current):
         pywikibot.getSite(),
         'User talk:%s' % editor_current
     )
-    header_line = '\n==G13 Eligibility Notice==\nThe following pages have become eligible for [[Wikipedia:Criteria_for_speedy_deletion#G13|CSD:G13]].'
+    header_line = '\n==G13 Eligibility Notice==\nThe following pages will become eligible for [[Wikipedia:Criteria_for_speedy_deletion#G13|CSD:G13]] shortly.'
     unified_notice = header_line + list_current + '\nThanks, ~~~~'
     try:
         user_talk_text = destination_page.get() + unified_notice
